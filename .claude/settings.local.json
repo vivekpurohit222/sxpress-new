@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan *)",
+      "Bash(php -v)",
+      "Bash(grep -rn 'function getFaker\\\\|protected function faker\\\\|protected $faker' vendor/laravel/framework/src/Illuminate/Database/Eloquent/Factories/Factory.php)"
+    ]
+  }
+}

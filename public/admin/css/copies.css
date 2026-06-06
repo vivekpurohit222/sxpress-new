@@ -1,0 +1,77 @@
+.header{
+    background-color: aquamarine;
+}
+
+.header h1{
+    text-align: center;
+}
+
+.to-from-date-details{
+    display: flex;
+    justify-content: space-around;
+}
+
+.form-section-2, .form-section-3, .form-section-1{
+    border: 1px solid black;
+    border-radius: 5px;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+#consigner, #consigner-2, #address, #address-2, #gst-no, #gst-no-2{
+    width: 950px;
+}
+
+.package-description-bind{
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+}
+
+.inner{
+    width: 100%;
+    border-bottom: 1px solid black;
+    padding-bottom: 10px;
+}
+
+.package-wrapper{
+    width: 20%;
+}
+
+.description-wrapper{
+    width: 75%;
+    display: flex;
+    flex-direction: column;
+}
+
+.amount-wrapper{
+    width: 40%;
+    border-left: 1px solid black;
+    padding-left: 10px;
+}
+
+.PM, .weight, .paid-at, .tbb{
+    width: 25%;
+}
+
+#pm, #weight, #paid-at, #tbb-at{
+    width: 140px;
+}
+
+.bottom-wrapper{
+    margin-top: 20px;
+    border-top: 1px solid black;
+}
+
+.terms{
+    width: 60%;
+    border-right: 1px solid black;
+}
+
+.signature{
+    width: 40%;
+}
+
+@page {
+    margin:0 ;
+}
