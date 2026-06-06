@@ -89,40 +89,40 @@ return new class extends Migration
 
     public function up(): void
     {
-        foreach (self::SOFT_DELETE_TABLES as $table) {
-            Schema::table($table, function (Blueprint $table) {
+        foreach (self::SOFT_DELETE_TABLES as $tableName) {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName) {
                 $table->softDeletes();
                 $table->unsignedBigInteger('created_by_id')->nullable()->after('deleted_at');
                 $table->unsignedBigInteger('updated_by_id')->nullable()->after('created_by_id');
-                $table->index('created_by_id', "idx_{$table}_created_by_id");
-                $table->index('updated_by_id', "idx_{$table}_updated_by_id");
+                $table->index('created_by_id', "idx_{$tableName}_created_by_id");
+                $table->index('updated_by_id', "idx_{$tableName}_updated_by_id");
             });
         }
 
-        foreach (self::AUDIT_ONLY_TABLES as $table) {
-            Schema::table($table, function (Blueprint $table) {
+        foreach (self::AUDIT_ONLY_TABLES as $tableName) {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName) {
                 $table->unsignedBigInteger('created_by_id')->nullable();
                 $table->unsignedBigInteger('updated_by_id')->nullable();
-                $table->index('created_by_id', "idx_{$table}_created_by_id");
-                $table->index('updated_by_id', "idx_{$table}_updated_by_id");
+                $table->index('created_by_id', "idx_{$tableName}_created_by_id");
+                $table->index('updated_by_id', "idx_{$tableName}_updated_by_id");
             });
         }
     }
 
     public function down(): void
     {
-        foreach (self::AUDIT_ONLY_TABLES as $table) {
-            Schema::table($table, function (Blueprint $table) {
-                $table->dropIndex("idx_{$table}_created_by_id");
-                $table->dropIndex("idx_{$table}_updated_by_id");
+        foreach (self::AUDIT_ONLY_TABLES as $tableName) {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName) {
+                $table->dropIndex("idx_{$tableName}_created_by_id");
+                $table->dropIndex("idx_{$tableName}_updated_by_id");
                 $table->dropColumn(['created_by_id', 'updated_by_id']);
             });
         }
 
-        foreach (self::SOFT_DELETE_TABLES as $table) {
-            Schema::table($table, function (Blueprint $table) {
-                $table->dropIndex("idx_{$table}_created_by_id");
-                $table->dropIndex("idx_{$table}_updated_by_id");
+        foreach (self::SOFT_DELETE_TABLES as $tableName) {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName) {
+                $table->dropIndex("idx_{$tableName}_created_by_id");
+                $table->dropIndex("idx_{$tableName}_updated_by_id");
                 $table->dropColumn(['deleted_at', 'created_by_id', 'updated_by_id']);
             });
         }

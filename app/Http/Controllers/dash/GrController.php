@@ -395,7 +395,7 @@ class GrController extends Controller
         'bc_amount.numberic'=>"BC Amount Field accept numberic characters",
         'total_amount.numberic'=>"Total Amount Field accept numberic characters",]);
 
-          $copy=new Gr\([
+          $copy=new Gr([
 
         'gr_no' => $request->post('gr_no'),
         'from_dest'=> $request->post('from_dest'),
@@ -575,5 +575,4 @@ class GrController extends Controller
         return Redirect('dash/gr')->with('success','Copy  deleted successfully');
     }
 }
-
 

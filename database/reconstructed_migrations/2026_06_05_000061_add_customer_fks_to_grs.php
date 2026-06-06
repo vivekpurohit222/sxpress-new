@@ -78,7 +78,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('consignor_id')->nullable()->after('consignee');
             }
             if (! Schema::hasColumn('grs', 'consignee_id')) {
-                $table->unsignedBigInteger('consignee_id')->nullable()->after('consignee_id' === '' ? 'consignor_id' : 'consignee_id');
+                $table->unsignedBigInteger('consignee_id')->nullable()->after('consignor_id');
             }
         });
 

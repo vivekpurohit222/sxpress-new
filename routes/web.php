@@ -47,13 +47,13 @@ Route::group(['prefix'=>'/dash'],function(){
 	Route:: delete('/truckdriver/{id}/delete',[App\Http\Controllers\TruckdriverController::class,'destroy'])->name('truckdriver_destroy');
 	Route:: get('/truckdriver/{id}/view',[App\Http\Controllers\TruckdriverController::class,'show'])->name('truckdriver_view');
 
-	Route:: get('/frieghtmemo',[App\Http\Controllers\dash\FrieghtController::class,'index']);
-	Route:: get('/frieghtmemo/create',[App\Http\Controllers\dash\FrieghtController::class,'create']);
-	Route:: post('/frieghtmemo/store',[App\Http\Controllers\dash\FrieghtController::class,'store']);
-	Route:: get('/frieghtmemo/{id}/edit',[App\Http\Controllers\dash\FrieghtController::class,'edit'])->name('frieght_edit');
-	Route:: patch('/frieghtmemo/{id}/update',[App\Http\Controllers\dash\FrieghtController::class,'update'])->name('frieght_update');
-	Route:: delete('/frieghtmemo/{id}/delete',[App\Http\Controllers\dash\FrieghtController::class,'destroy'])->name('frieght_destroy');
-	Route:: get('/frieghtmemo/{id}/view',[App\Http\Controllers\dash\FrieghtController::class,'show'])->name('frieght_view');
+	Route:: get('/frieghtmemo',[App\Http\Controllers\dash\FreightController::class,'index']);
+	Route:: get('/frieghtmemo/create',[App\Http\Controllers\dash\FreightController::class,'create']);
+	Route:: post('/frieghtmemo/store',[App\Http\Controllers\dash\FreightController::class,'store']);
+	Route:: get('/frieghtmemo/{id}/edit',[App\Http\Controllers\dash\FreightController::class,'edit'])->name('frieght_edit');
+	Route:: patch('/frieghtmemo/{id}/update',[App\Http\Controllers\dash\FreightController::class,'update'])->name('frieght_update');
+	Route:: delete('/frieghtmemo/{id}/delete',[App\Http\Controllers\dash\FreightController::class,'destroy'])->name('frieght_destroy');
+	Route:: get('/frieghtmemo/{id}/view',[App\Http\Controllers\dash\FreightController::class,'show'])->name('frieght_view');
 
 
 	

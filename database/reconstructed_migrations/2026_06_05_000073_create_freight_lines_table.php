@@ -61,7 +61,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('freight_memo_id', 'idx_freight_lines_freight_memo_id');
-            $table->index(['freight_memo_id', 'sequence'], 'uk_freight_lines_memo_sequence');
+            $table->unique(['freight_memo_id', 'sequence'], 'uk_freight_lines_memo_sequence');
 
             $table->foreign('freight_memo_id')->references('id')->on('frieghts')
                   ->onDelete('cascade')->onUpdate('cascade');
