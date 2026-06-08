@@ -42,11 +42,13 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        // The "hashed" cast hashes the value on assignment exactly once.
+        // It is idempotent: Hash::isHashed() guards against re-hashing an
+        // already-hashed value, so callers may pass plaintext (controllers)
+        // or a pre-hashed string (seeders) safely. This replaces the old
+        // setPasswordAttribute() mutator, which double-hashed seeded values.
+        'password' => 'hashed',
     ];
-    public function setPasswordAttribute($password)
-{
-    $this->attributes['password'] = bcrypt($password);
-}
 
     public function officeall(){
         $id = Auth::user()->id;

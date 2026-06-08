@@ -17,12 +17,19 @@ class AdminMiddleware
      */
     public function handle($request, Closure $next)
     {
-        $user = User::all()->count();
-        if (!($user == 1)) {
-            if (!Auth::user()->hasPermissionTo('Administer roles & permissions')) //If user does //not have this permission
-        {
-                abort('401');
-            }
+        // Bootstrap case: on a brand-new install with a single user, allow
+        // access so the first admin can configure roles. Use count() rather
+        // than User::all()->count() to avoid loading every row.
+        if (User::count() === 1) {
+            return $next($request);
+        }
+
+        // can() returns false for an unauthenticated user or a missing
+        // permission, so it never throws PermissionDoesNotExist (unlike
+        // hasPermissionTo()). The 'assign role' permission is the seeded
+        // gate for role/permission/user administration.
+        if (! Auth::user()?->can('assign role')) {
+            abort(401);
         }
 
         return $next($request);

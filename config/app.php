@@ -58,6 +58,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Maintenance Mode Driver
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options determine the driver used to determine and
+    | manage Laravel's "maintenance mode" status. The "file" driver is the
+    | default, but you may specify any driver you wish.
+    |
+    | Supported: "file", "cache"
+    |
+    | */
+
+    'maintenance' => [
+        'driver' => 'file',
+        // 'store'  => 'redis',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

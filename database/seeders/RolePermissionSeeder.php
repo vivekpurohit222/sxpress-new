@@ -131,6 +131,9 @@ class RolePermissionSeeder extends Seeder
 
             // User management
             'view user', 'create user', 'edit user', 'delete user', 'assign role',
+
+            // Legacy posts module (gated by ClearanceMiddleware)
+            'view post', 'create post', 'edit post', 'delete post',
         ];
     }
 
