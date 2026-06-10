@@ -2,17 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Support\Facades\DB;
+
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
-    use HasRoles;
+    use HasFactory, Notifiable, HasRoles, SoftDeletes;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -23,6 +22,10 @@ class User extends Authenticatable
         'email',
         'password',
         'office',
+        'phone',
+        'is_active',
+        'branch_id',
+        'last_login_at',
     ];
 
     /**
@@ -42,18 +45,32 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        // The "hashed" cast hashes the value on assignment exactly once.
-        // It is idempotent: Hash::isHashed() guards against re-hashing an
-        // already-hashed value, so callers may pass plaintext (controllers)
-        // or a pre-hashed string (seeders) safely. This replaces the old
-        // setPasswordAttribute() mutator, which double-hashed seeded values.
+        'last_login_at' => 'datetime',
+        'is_active' => 'boolean',
         'password' => 'hashed',
     ];
 
-    public function officeall(){
-        $id = Auth::user()->id;
-        return $data = DB::table('users')
-            ->where('id',$id)
-            ->pluck('office');
+    /**
+     * Get the branch this user belongs to.
+     */
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class ?? \stdClass::class, 'branch_id');
+    }
+
+    /**
+     * Scope: only active users.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope: only inactive users.
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('is_active', false);
     }
 }

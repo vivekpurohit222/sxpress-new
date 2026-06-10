@@ -96,7 +96,7 @@
                                   @endif -->
                         <div class="card-header">
                             <strong class="card-title">Available Roles</strong>
-                            <a href="{{URL::to('dash/roles/create')}}" class="btn btn-primary pull-right">Add Role</a>
+                            <a href="{{URL::to('roles/create')}}" class="btn btn-primary pull-right">Add Role</a>
                         </div>
                         <div class="card-body">
                   <table id="bootstrap-data-table" class="table table-striped table-bordered">
@@ -120,7 +120,7 @@
                             {{ str_replace(array('[',']','"'),'', $role->permissions()->pluck('name')) }}</td>{{-- Retrieve array of permissions associated to a role and convert to string --}}
                   
                     <td>
-                    <a href="{{ URL::to('dash/roles/'.$role->id.'/edit') }}" class="btn btn-info pull-left" style="margin-right: 3px;">Edit</a>
+                    <a href="{{ URL::to('roles/'.$role->id.'/edit') }}" class="btn btn-info pull-left" style="margin-right: 3px;">Edit</a>
 
                     {!! Form::open(['method' => 'DELETE', 'route' => ['roles.destroy', $role->id] ]) !!}
                     {!! Form::submit('Delete', ['class' => 'btn btn-danger']) !!}

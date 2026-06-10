@@ -1,122 +1,99 @@
- <!-- Left Panel -->
+<!-- Left Panel -->
+<aside id="left-panel" class="left-panel">
+    <nav class="navbar navbar-expand-sm navbar-default">
 
-    <aside id="left-panel" class="left-panel">
-        <nav class="navbar navbar-expand-sm navbar-default">
+        <div class="navbar-header">
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="fa fa-bars"></i>
+            </button>
+            <a class="navbar-brand" href="./"><img src="{{asset('admin/images/saurashtraf.png')}}" alt="Logo"></a>
+            <a class="navbar-brand hidden" href="./"><img src="{{asset('admin/images/logo2.png')}}" alt="Logo"></a>
+        </div>
 
-            <div class="navbar-header">
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
-                    <i class="fa fa-bars"></i>
-                </button>
-                <a class="navbar-brand" href="./"><img src="{{asset('admin/images/saurashtraf.png')}}" alt="Logo"></a>
-                <a class="navbar-brand hidden" href="./"><img src="{{asset('admin/images/logo2.png')}}" alt="Logo"></a>
-            </div>
+        <div id="main-menu" class="main-menu collapse navbar-collapse">
+            <ul class="nav navbar-nav">
 
-            <div id="main-menu" class="main-menu collapse navbar-collapse">
-                <ul class="nav navbar-nav">
-               
-                    <li class="">
-                        <a href="{{url('/dash/')}}"aria-haspopup="true" > <i class="menu-icon fa fa-laptop" aria-hidden="true"></i>Dashboard</a>
-                    </li>
-                    
-                    <li class="">
-                        <a href="{{url('/dash/gr')}}"aria-haspopup="true" > <i class="menu-icon fa fa-files-o" aria-hidden="true"></i>GR</a>
-                    </li>
-                    <li class="">
-                        <a href="{{url('/dash/gatepass')}}"> <i class="menu-icon fa fa-check-square"></i>Gatepass </a>
-                    </li>
-                    <li class="">
-                        <a href="{{url('/dash/frieghtmemo')}}"> <i class=" menu-icon fa fa-truck" aria-hidden="true"></i>Freight Memo </a>
-                    </li>
-                    <li class="">
-                        <a href="{{url('/dash/challan')}}"> <i class="menu-icon fa fa-table"></i>Challan </a>
-                    </li>
-                    <li class="">
-                        <a href="{{url('/dash/users')}}"> <i class="menu-icon fa fa-user-plus"></i>users </a>
-                    </li>
-                     <li class="">
-                        <a href="{{url('/dash/permissions')}}"> <i class="menu-icon fa fa-user-plus"></i>Permission </a>
-                    </li>
-                     <li class="">
-                        <a href="{{url('/dash/roles')}}"> <i class="menu-icon fa fa-user-plus"></i>Role </a>
+                {{-- 1. Dashboard --}}
+                <li>
+                    <a href="{{url('/dash')}}"> <i class="menu-icon fa fa-laptop"></i>Dashboard</a>
+                </li>
 
-                    </li>
-                    <li class="">
-                        <a href="{{url('/dash/truckdriver')}}"> <i class="menu-icon fa fa-user-plus"></i>Truck Details</a>
-                        
-                    </li>
-                   
-                    <!-- <h3 class="menu-title">Copy</h3> --><!-- /.menu-title -->
-                    <!-- <li class="menu-item-has-children dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-laptop"></i>Components</a>
-                        <ul class="sub-menu children dropdown-menu">
-                            <li><i class="fa fa-puzzle-piece"></i><a href="ui-buttons.html">Buttons</a></li>
-                            <li><i class="fa fa-id-badge"></i><a href="ui-badges.html">Badges</a></li>
-                            <li><i class="fa fa-bars"></i><a href="ui-tabs.html">Tabs</a></li>
-                            <li><i class="fa fa-share-square-o"></i><a href="ui-social-buttons.html">Social Buttons</a></li>
-                            <li><i class="fa fa-id-card-o"></i><a href="ui-cards.html">Cards</a></li>
-                            <li><i class="fa fa-exclamation-triangle"></i><a href="ui-alerts.html">Alerts</a></li>
-                            <li><i class="fa fa-spinner"></i><a href="ui-progressbar.html">Progress Bars</a></li>
-                            <li><i class="fa fa-fire"></i><a href="ui-modals.html">Modals</a></li>
-                            <li><i class="fa fa-book"></i><a href="ui-switches.html">Switches</a></li>
-                            <li><i class="fa fa-th"></i><a href="ui-grids.html">Grids</a></li>
-                            <li><i class="fa fa-file-word-o"></i><a href="ui-typgraphy.html">Typography</a></li>
-                        </ul>
-                    </li>
-                    <li class="menu-item-has-children dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-table"></i>Tables</a>
-                        <ul class="sub-menu children dropdown-menu">
-                            <li><i class="fa fa-table"></i><a href="tables-basic.html">Basic Table</a></li>
-                            <li><i class="fa fa-table"></i><a href="tables-data.html">Data Table</a></li>
-                        </ul>
-                    </li>
-                    <li class="menu-item-has-children dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-th"></i>Forms</a>
-                        <ul class="sub-menu children dropdown-menu">
-                            <li><i class="menu-icon fa fa-th"></i><a href="forms-basic.html">Basic Form</a></li>
-                            <li><i class="menu-icon fa fa-th"></i><a href="forms-advanced.html">Advanced Form</a></li>
-                        </ul>
-                    </li> -->
+                {{-- 2. GR --}}
+                <li>
+                    <a href="{{url('/gr')}}"> <i class="menu-icon fa fa-files-o"></i>GR</a>
+                </li>
 
-                   <!--  <h3 class="menu-title">Icons</h3> --><!-- /.menu-title -->
+                {{-- 3. Challan --}}
+                <li>
+                    <a href="{{url('/challan')}}"> <i class="menu-icon fa fa-table"></i>Challan</a>
+                </li>
 
-                   <!--  <li class="menu-item-has-children dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-tasks"></i>Icons</a>
-                        <ul class="sub-menu children dropdown-menu">
-                            <li><i class="menu-icon fa fa-fort-awesome"></i><a href="font-fontawesome.html">Font Awesome</a></li>
-                            <li><i class="menu-icon ti-themify-logo"></i><a href="font-themify.html">Themefy Icons</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="widgets.html"> <i class="menu-icon ti-email"></i>Widgets </a>
-                    </li>
-                    <li class="menu-item-has-children dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-bar-chart"></i>Charts</a>
-                        <ul class="sub-menu children dropdown-menu">
-                            <li><i class="menu-icon fa fa-line-chart"></i><a href="charts-chartjs.html">Chart JS</a></li>
-                            <li><i class="menu-icon fa fa-area-chart"></i><a href="charts-flot.html">Flot Chart</a></li>
-                            <li><i class="menu-icon fa fa-pie-chart"></i><a href="charts-peity.html">Peity Chart</a></li>
-                        </ul>
-                    </li>
+                {{-- 4. Gatepass --}}
+                <li>
+                    <a href="{{url('/gatepass')}}"> <i class="menu-icon fa fa-check-square"></i>Gatepass</a>
+                </li>
 
-                    <li class="menu-item-has-children dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-area-chart"></i>Maps</a>
-                        <ul class="sub-menu children dropdown-menu">
-                            <li><i class="menu-icon fa fa-map-o"></i><a href="maps-gmap.html">Google Maps</a></li>
-                            <li><i class="menu-icon fa fa-street-view"></i><a href="maps-vector.html">Vector Maps</a></li>
-                        </ul>
-                    </li> -->
-                    <!-- <h3 class="menu-title">Extras</h3> --><!-- /.menu-title -->
-                    <!-- <li class="menu-item-has-children dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-glass"></i>Pages</a>
-                        <ul class="sub-menu children dropdown-menu">
-                            <li><i class="menu-icon fa fa-sign-in"></i><a href="page-login.html">Login</a></li>
-                            <li><i class="menu-icon fa fa-sign-in"></i><a href="page-register.html">Register</a></li>
-                            <li><i class="menu-icon fa fa-paper-plane"></i><a href="pages-forget.html">Forget Pass</a></li>
-                        </ul>
-                    </li> -->
-                </ul>
-            </div><!-- /.navbar-collapse -->
-        </nav>
-    </aside><!-- /#left-panel -->
+                {{-- 5. Freight Memo (Manager+) --}}
+                @hasanyrole('SuperAdmin|Admin|Manager')
+                <li>
+                    <a href="{{url('/frieghtmemo')}}"> <i class="menu-icon fa fa-truck"></i>Freight Memo</a>
+                </li>
+                @endhasanyrole
 
-    <!-- Left Panel -->
+                {{-- 6. Reports (Manager+) --}}
+                @hasanyrole('SuperAdmin|Admin|Manager')
+                <li class="menu-item-has-children dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-bar-chart"></i>Reports</a>
+                    <ul class="sub-menu children dropdown-menu">
+                        <li><i class="fa fa-list"></i><a href="{{ url('/dash/reports') }}">All Reports</a></li>
+                        <li><i class="fa fa-calendar"></i><a href="{{ url('/dash/reports/daily-booking') }}">Daily Booking</a></li>
+                        <li><i class="fa fa-book"></i><a href="{{ url('/dash/reports/gr-register') }}">GR Register</a></li>
+                        <li><i class="fa fa-line-chart"></i><a href="{{ url('/dash/reports/revenue') }}">Revenue</a></li>
+                        <li><i class="fa fa-clock-o"></i><a href="{{ url('/dash/reports/pending-topay') }}">Pending TO-PAY</a></li>
+                        <li><i class="fa fa-truck"></i><a href="{{ url('/dash/reports/pending-delivery') }}">Pending Delivery</a></li>
+                        <li><i class="fa fa-file-pdf-o"></i><a href="{{ url('/dash/reports/pending-pod') }}">Pending POD</a></li>
+                        <li><i class="fa fa-building"></i><a href="{{ url('/dash/reports/branch-performance') }}">Branch Performance</a></li>
+                    </ul>
+                </li>
+                @endhasanyrole
+
+                {{-- 7. Settings (Admin+) — Masters, Users, Roles --}}
+                @hasanyrole('SuperAdmin|Admin')
+                <li class="menu-item-has-children dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-cog"></i>Settings</a>
+                    <ul class="sub-menu children dropdown-menu">
+                        <li><i class="fa fa-user"></i><a href="{{ url('/users') }}">Users</a></li>
+                        <li><i class="fa fa-shield"></i><a href="{{ url('/roles') }}">Roles</a></li>
+                        <li><i class="fa fa-key"></i><a href="{{ url('/permissions') }}">Permissions</a></li>
+                        @role('SuperAdmin')
+                        <li><i class="fa fa-building"></i><a href="{{ url('/branch') }}">Branches</a></li>
+                        <li><i class="fa fa-sort-numeric-asc"></i><a href="{{ url('/serial-assign') }}">GR Serial</a></li>
+                        @endrole
+                        <li><i class="fa fa-truck"></i><a href="{{ url('/vehicle') }}">Vehicles</a></li>
+                        <li><i class="fa fa-id-card"></i><a href="{{ url('/truckdriver') }}">Drivers</a></li>
+                        <li><i class="fa fa-road"></i><a href="{{ url('/route') }}">Routes</a></li>
+                        <li><i class="fa fa-map-marker"></i><a href="{{ url('/station') }}">Stations</a></li>
+                        <li><i class="fa fa-users"></i><a href="{{ url('/customer') }}">Customers</a></li>
+                        <li><i class="fa fa-upload"></i><a href="{{ url('/consignor') }}">Consignors</a></li>
+                        <li><i class="fa fa-download"></i><a href="{{ url('/consignee') }}">Consignees</a></li>
+                    </ul>
+                </li>
+                @else
+                {{-- Staff/Manager see limited masters --}}
+                @hasanyrole('Manager|Staff')
+                <li class="menu-item-has-children dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-cog"></i>Settings</a>
+                    <ul class="sub-menu children dropdown-menu">
+                        <li><i class="fa fa-users"></i><a href="{{ url('/customer') }}">Customers</a></li>
+                        <li><i class="fa fa-upload"></i><a href="{{ url('/consignor') }}">Consignors</a></li>
+                        <li><i class="fa fa-download"></i><a href="{{ url('/consignee') }}">Consignees</a></li>
+                    </ul>
+                </li>
+                @endhasanyrole
+                @endhasanyrole
+
+            </ul>
+        </div>
+    </nav>
+</aside>
+<!-- Left Panel -->

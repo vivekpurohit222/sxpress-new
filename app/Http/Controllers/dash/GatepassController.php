@@ -3,221 +3,325 @@
 namespace App\Http\Controllers\dash;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\gatepass;
-use App\Models\gr;
+use App\Models\Gr;
+use App\Models\Vehicle;
+use App\Models\truckdriver;
+use App\Events\GRDispatched;
+use App\Services\GrWorkflowService;
+use App\Traits\OfficeScopeTrait;
 use Carbon\Carbon;
-
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+
 class GatepassController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {    $gr_no = gr::latest()->first()->gr_no;
+    use OfficeScopeTrait;
 
-          $gatepass_list_page='Gate Pass List';
-            $gatepass=gatepass::all();
-            // $copies=$data->sortByDesc('created_at');
-         
-            return view('admin.category.Gatepass.gate_pass_list',compact('gatepass','gatepass_list_page','gr_no'));
+    private GrWorkflowService $workflow;
+
+    public function __construct(GrWorkflowService $workflow)
+    {
+        $this->middleware('auth');
+        $this->workflow = $workflow;
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Display gatepass list with optional search and branch filter.
+     * Per SXPRESS_LOGIC_SKILL section 17.
+     */
+    public function index(Request $request)
+    {
+        $query = gatepass::with(['grs', 'vehicle']);
+
+        $this->officeScope($query);
+
+        // Search
+        if ($s = $request->search) {
+            $query->where(function ($q) use ($s) {
+                $q->where('gp_no', 'like', "%{$s}%")
+                  ->orWhere('from_dest', 'like', "%{$s}%")
+                  ->orWhere('to_dest', 'like', "%{$s}%");
+            });
+        }
+
+        // Date range
+        if ($from = $request->from_date) {
+            $query->whereDate('gp_date', '>=', $from);
+        }
+        if ($to = $request->to_date) {
+            $query->whereDate('gp_date', '<=', $to);
+        }
+
+        // SuperAdmin branch filter
+        if ($this->isSuperAdmin() && $branch = $request->branch) {
+            $query->where('office', $branch);
+        }
+
+        $items = $query->latest()->paginate(25)->withQueryString();
+        $branches = $this->getBranchOptions();
+
+        $gatepass_list_page = 'Gate Pass List';
+
+        return view('admin.category.Gatepass.gate_pass_list', compact('items', 'gatepass_list_page', 'branches'));
+    }
+
+    /**
+     * Show the form for creating a new gatepass.
+     * Per SXPRESS_LOGIC_SKILL section 5.
      */
     public function create(Request $request)
-    {    $gp_no = gatepass::latest()->first()->gp_no;
-            $gp_no++;
-            if($gp_no == 1000)
-            {
-                $gp_no = 0;
-            }
-              $date = Carbon::now();
-           $date=date('d-m-y');
-         $gr_no = $request->get('gr_no');
-        $gr= DB::table('grs')->where('gr_no', $gr_no)->first();
+    {
+        $office = $this->currentOffice();
+        $gpNo = $this->generateGatepassNo($office);
+        $date = Carbon::now()->format('d-m-y');
 
-       
-         return view('admin.category.Gatepass.gate_pass',compact('gr','date','gp_no'));
+        // Pre-select GR if passed (from GR list action)
+        $preSelectedGr = null;
+        if ($grNo = $request->get('gr_no')) {
+            $preSelectedGr = Gr::where('gr_no', $grNo)
+                ->where('office', $office)
+                ->where('status', 'created')
+                ->first();
+        }
+
+        // Get active vehicles and drivers for dropdowns
+        $vehicles = Vehicle::where('status', 'active')->orderBy('vehicle_number')->get();
+        $drivers = truckdriver::where('status', 1)->orderBy('driver_name')->get();
+
+        return view('admin.category.Gatepass.gate_pass', compact('gpNo', 'date', 'office', 'preSelectedGr', 'vehicles', 'drivers'));
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Store a newly created gatepass.
+     * Per SXPRESS_LOGIC_SKILL section 5 - Gatepass store() Logic.
      */
     public function store(Request $request)
     {
-        $request->validate([
-        
-        'gp_no'=> 'required',
-        'gp_date'=> 'required',
-        'm_s'=> 'required',
-        'from_dest'=> 'required',
-
-        'to_dest'=> 'required',
-        'gr_no'=> 'required',    
-        'weight'=> 'required',
-        'nugs'=> 'required',
-        'pm'=> 'required',
-
-        'frieght_amount'=> 'required',
-        'labour_amount'=> 'required',
-        'other'=> 'required',
-        'dc_amount'=> 'required',    
-        'total_amount'=> 'required',
-        
-        
-],[     
-       
-        'from_dest.required'=>"From Field is Required",    
-        'to_dest.required'=>"To Field is Required",  
-        'm_s.required'=>"MS Name Field is Required", 
-      
-        
-      
-        
-        
-        'pm.required'=>"PM Field is Required",
-        'weight.required'=>"weight Field is Required",   
-       
-        'nugs.required'=>"Nugs At Field is Required",   
-        'frieght_amount.required'=>"Frieght Amount Fieldis Required",   
-        
-        'other.required'=>"Other amount Field is Required",
-        'dc_amount.required'=>"BC Amount Field is Required",    
-         
-       ]);
-
-          $gatepass=new gatepass([
-        'gp_no' => $request->post('gp_no'),
-        'gr_no' => $request->post('gr_no'),
-        'from_dest'=> $request->post('from_dest'),    
-        'to_dest'=> $request->post('to_dest'), 
-        'gp_date'=>$request->post('gp_date'), 
-        'm_s'=> $request->post('m_s'), 
-        'pm'=> $request->post('pm'),
-        'weight'=> $request->post('weight'),   
-        'nugs'=> $request->post('nugs'),  
-        'frieght_amount'=> $request->post('frieght_amount'),   
-        'labour_amount'=> $request->post('labour_amount'),
-        'other'=> $request->post('other'),
-        'dc_amount'=> $request->post('dc_amount'),    
-        'total_amount'=> $request->post('total_amount'),
-        'note'=>$request->post('note'),
+        $validated = $request->validate([
+            'gp_date'    => 'required|date|before_or_equal:today',
+            'from_dest'  => 'required|string|max:100',
+            'to_dest'    => 'required|string|max:100',
+            'gr_ids'     => 'required|array|min:1',
+            'gr_ids.*'   => 'exists:grs,id',
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'driver_id'  => 'required|exists:truckdrivers,id',
+            'remarks'    => 'nullable|string|max:500',
+        ], [
+            'gr_ids.required' => 'At least one GR must be selected.',
+            'gr_ids.*.exists' => 'One or more selected GRs are invalid.',
+            'vehicle_id.required' => 'Please select a vehicle.',
+            'driver_id.required' => 'Please select a driver.',
         ]);
-        $gatepass->save();
-        return Redirect('dash/gatepass')->with('success','Gatepass Added successfully');
 
+        // Validate all selected GRs belong to current office and are in 'created' status
+        $grs = Gr::whereIn('id', $validated['gr_ids'])
+                  ->where('office', $this->currentOffice())
+                  ->where('status', 'created')
+                  ->get();
+
+        if ($grs->count() !== count($validated['gr_ids'])) {
+            return back()->withInput()->withErrors([
+                'gr_ids' => 'One or more selected GRs are invalid, belong to another office, or are already dispatched.'
+            ]);
+        }
+
+        // Create gatepass
+        $firstGr = $grs->first();
+        $gatepass = gatepass::create([
+            'gp_no'          => $this->generateGatepassNoAtomic($this->currentOffice()),
+            'gp_date'        => $validated['gp_date'],
+            'from_dest'      => $validated['from_dest'],
+            'to_dest'        => $validated['to_dest'],
+            'vehicle_id'     => $validated['vehicle_id'],
+            'driver_id'      => $validated['driver_id'],
+            'note'           => $validated['remarks'] ?? '',
+            'office'         => $this->currentOffice(),
+            'created_by_id'  => auth()->id(),
+            // Legacy columns (populated from linked GRs for backward compat)
+            'gr_no'          => $grs->pluck('gr_no')->implode(','),
+            'consignor'      => $firstGr->consignor ?? '',
+            'weight'         => $grs->sum('weight'),
+            'nugs'           => $grs->sum('nugs'),
+            'pm'             => $firstGr->pm ?? '',
+            'frieght_amount' => $grs->sum('frieght_amount'),
+            'total_amount'   => $grs->sum('total_amount'),
+        ]);
+
+        // Link GRs via pivot table and auto-transition each to 'dispatched'
+        foreach ($grs as $gr) {
+            $gatepass->grs()->attach($gr->id, ['gr_no' => $gr->gr_no]);
+        }
+
+        foreach ($grs as $gr) {
+            $this->workflow->transition($gr, 'dispatched', auth()->user());
+            // Fire GRDispatched event (non-blocking)
+            try {
+                event(new GRDispatched($gr));
+            } catch (\Throwable $e) {
+                \Log::warning('GRDispatched event failed: ' . $e->getMessage());
+            }
+        }
+
+        return redirect()->route('gatepass.index')
+            ->with('success', "Gatepass {$gatepass->gp_no} created for {$grs->count()} GR(s). GR(s) marked as Dispatched.");
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Display a gatepass (view/print).
      */
     public function show($id)
     {
-        $gp=gatepass::find($id);
-       return view('admin.category.copies_print',compact('gp','id'));
+        $gp = gatepass::with(['vehicle', 'driver', 'grs'])->findOrFail($id);
+
+        if (!$this->isSuperAdmin() && $gp->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        return view('admin.category.Gatepass.gate_pass_view', compact('gp', 'id'));
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Show the form for editing a gatepass.
      */
     public function edit($id)
     {
-        $gp=gatepass::find($id);
-       return view('admin.category.Gatepass.gate_pass_edit',compact('gp','id'));
+        $gp = gatepass::with(['vehicle', 'driver', 'grs'])->findOrFail($id);
+
+        if (!$this->isSuperAdmin() && $gp->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Only Manager or higher can edit a gatepass.');
+        }
+
+        $vehicles = Vehicle::where('status', 'active')->orderBy('vehicle_number')->get();
+        $drivers = truckdriver::where('status', 1)->orderBy('driver_name')->get();
+
+        return view('admin.category.Gatepass.gate_pass_edit', compact('gp', 'id', 'vehicles', 'drivers'));
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Update a gatepass.
      */
     public function update(Request $request, $id)
     {
-        $request->validate([
-        
-        'gp_no'=> 'required',
-        'gp_date'=> 'required',
-        'm_s'=> 'required',
-        'from_dest'=> 'required',
+        $gp = gatepass::findOrFail($id);
 
-        'to_dest'=> 'required',
-        'gr_no'=> 'required',    
-        'weight'=> 'required',
-        'nugs'=> 'required',
-        'pm'=> 'required',
+        if (!$this->isSuperAdmin() && $gp->office !== $this->currentOffice()) {
+            abort(403);
+        }
 
-        'frieght_amount'=> 'required',
-        'labour_amount'=> 'required',
-        'other'=> 'required',
-        'dc_amount'=> 'required',    
-        'total_amount'=> 'required',
-        
-        
-],[     
-       
-        'from_dest.required'=>"From Field is Required",    
-        'to_dest.required'=>"To Field is Required",  
-        'm_s.required'=>"MS Name Field is Required", 
-        'pm.required'=>"PM Field is Required",
-        'weight.required'=>"weight Field is Required",   
-        'nugs.required'=>"Nugs At Field is Required",   
-        'frieght_amount.required'=>"Frieght Amount Fieldis Required",   
-        'other.required'=>"other amount Field is Required",
-        'dc_amount.required'=>"BC Amount Field is Required",    
-         
-       ]);
-         $gp=gatepass::find($id);
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403);
+        }
 
-        $gp->gp_no = $request->get('gp_no');
-        $gp->from_dest = $request->get('from_dest');    
-        $gp->to_dest = $request->get('to_dest'); 
-        $gp->gp_date = $request->get('gp_date');
-        $gp->m_s = $request->get('m_s'); 
-        $gp->gr_no = $request->get('gr_no');
-        $gp->nugs = $request->get('nugs'); 
-        $gp->labour_amount = $request->get('labour_amount');
-        $gp->note = $request->get('note');
-        $gp->pm = $request->get('pm');
-        $gp->weight = $request->get('weight');   
-        $gp->frieght_amount = $request->get('frieght_amount');    
-        $gp->gst_amount = $request->get('other');
-        $gp->dc_amount = $request->get('dc_amount');    
-        $gp->total_amount = $request->get('total_amount');
+        $validated = $request->validate([
+            'gp_date'    => 'required|date',
+            'from_dest'  => 'required|string|max:100',
+            'to_dest'    => 'required|string|max:100',
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'driver_id'  => 'required|exists:truckdrivers,id',
+            'remarks'    => 'nullable|string|max:500',
+        ]);
 
+        $gp->update([
+            'gp_date'    => $validated['gp_date'],
+            'from_dest'  => $validated['from_dest'],
+            'to_dest'    => $validated['to_dest'],
+            'vehicle_id' => $validated['vehicle_id'],
+            'driver_id'  => $validated['driver_id'],
+            'note'       => $validated['remarks'] ?? '',
+        ]);
 
-       
-        $gp->save();
-        return Redirect('dash/gatepass')->with('success','Gate Pass Updated successfully');
+        return redirect()->route('gatepass.index')
+            ->with('success', 'Gatepass updated successfully.');
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Delete a gatepass.
+     * Per SXPRESS_LOGIC_SKILL section 5 - reverses GR status to 'created'.
      */
     public function destroy($id)
     {
-        $gp=gatepass::find($id);
-        $gp->delete();
-        return Redirect('dash/gatepass')->with('success','Gate Pass  deleted successfully');
-            }
+        $gp = gatepass::findOrFail($id);
+
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+            abort(403);
+        }
+        if (!$this->isSuperAdmin() && $gp->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        try {
+            DB::transaction(function () use ($gp) {
+                // Block if any linked GR has progressed beyond 'dispatched'
+                $advancedGrs = $gp->grs()->whereNotIn('status', ['dispatched', 'created'])->count();
+                if ($advancedGrs > 0) {
+                    throw new \Exception('Cannot delete — one or more GRs have progressed beyond dispatched status.');
+                }
+
+                // Reverse GR status back to 'created'
+                foreach ($gp->grs as $gr) {
+                    if ($gr->status === 'dispatched') {
+                        $gr->update(['status' => 'created']);
+                    }
+                }
+
+                $gp->grs()->detach();
+                $gp->delete();
+            });
+        } catch (\Exception $e) {
+            return back()->withErrors([$e->getMessage()]);
+        }
+
+        return redirect()->route('gatepass.index')
+            ->with('success', 'Gatepass deleted. GR(s) reverted to Created status.');
+    }
+
+    /**
+     * Print gatepass.
+     * GET /dash/gatepass/{id}/print
+     */
+    public function print($id)
+    {
+        $gp = gatepass::with(['vehicle', 'driver', 'grs'])->findOrFail($id);
+
+        if (!$this->isSuperAdmin() && $gp->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        return view('admin.category.Gatepass.gate_pass_print', compact('gp'));
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // PRIVATE HELPER METHODS
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Generate gatepass number — integer sequential per office.
+     * Legacy table uses INT for gp_no.
+     */
+    private function generateGatepassNo(string $office): int
+    {
+        $last = gatepass::withTrashed()->where('office', $office)->orderByDesc('gp_no')->first();
+        return $last ? ($last->gp_no + 1) : 1;
+    }
+
+    /**
+     * Atomic gatepass number generation with row locking.
+     */
+    private function generateGatepassNoAtomic(string $office): int
+    {
+        return DB::transaction(function () use ($office) {
+            $last = gatepass::withTrashed()->where('office', $office)
+                ->lockForUpdate()
+                ->orderByDesc('gp_no')
+                ->first();
+
+            return $last ? ($last->gp_no + 1) : 1;
+        });
+    }
 }

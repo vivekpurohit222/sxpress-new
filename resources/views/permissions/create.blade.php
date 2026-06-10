@@ -90,7 +90,7 @@
                                   @endif
                                   <hr>
 
-                                  {{ Form::open(array('url' => 'dash/permissions')) }}
+                                  {{ Form::open(array('url' => 'permissions')) }}
                                     @csrf
                                         
                                       

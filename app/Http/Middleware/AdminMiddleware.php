@@ -4,12 +4,15 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 
 class AdminMiddleware
 {
     /**
      * Handle an incoming request.
+     * Allows SuperAdmin and Admin roles only.
+     *
+     * NOTE: Prefer using route-level `role:SuperAdmin|Admin` middleware instead.
+     * This middleware is kept for backward compatibility with any legacy references.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next
@@ -17,19 +20,12 @@ class AdminMiddleware
      */
     public function handle($request, Closure $next)
     {
-        // Bootstrap case: on a brand-new install with a single user, allow
-        // access so the first admin can configure roles. Use count() rather
-        // than User::all()->count() to avoid loading every row.
-        if (User::count() === 1) {
-            return $next($request);
+        if (!Auth::check()) {
+            return redirect()->route('login');
         }
 
-        // can() returns false for an unauthenticated user or a missing
-        // permission, so it never throws PermissionDoesNotExist (unlike
-        // hasPermissionTo()). The 'assign role' permission is the seeded
-        // gate for role/permission/user administration.
-        if (! Auth::user()?->can('assign role')) {
-            abort(401);
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+            abort(403, 'Access denied. Admin or SuperAdmin role required.');
         }
 
         return $next($request);

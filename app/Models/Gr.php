@@ -2,48 +2,177 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Gr extends Model
 {
-    use HasFactory;
-    
+    use HasFactory, SoftDeletes, Auditable;
+
+    // Per master doc section 5 - grs table schema
     protected $fillable = [
         'gr_no',
         'from_dest',
         'to_dest',
         'copy_date',
         'consignor',
-        'nor_adress',
-        'nor_gst_no',
+        'consignor_address',
+        'consignor_gst_no',
         'consignee',
-        'nee_adress',
-        'nee_gst_no',
+        'consignee_address',
+        'consignee_gst_no',
         'nugs',
         'meth',
         'eway_bill_number',
         'bill_amount',
-        'paid',
-        'to_pay',
-        'other',
         'description',
         'pm',
         'weight',
+        'paid',
+        'to_pay',
+        'topay_collected',
+        'topay_collected_date',
+        'topay_collected_by',
+        'status_updated_at',
+        'status_updated_by',
         'frieght_amount',
         'sur_ch',
         'c_r',
+        'other',
         'bc_amount',
         'total_amount',
+        'office',
+        'status',
+        'delivery_status',
+        'pod_file',
+        'pod_date',
+        'pod_note',
+        'pod_uploaded_by',
+        'delivered_at',
+        'created_by_id',
+        'from_branch_id',
+        'to_branch_id',
+        'consignor_id',
+        'consignee_id',
+    ];
+
+    protected $casts = [
+        'copy_date'            => 'date',
+        'pod_date'             => 'date',
+        'topay_collected_date' => 'date',
+        'delivered_at'         => 'datetime',
+        'status_updated_at'    => 'datetime',
+        'paid'                 => 'boolean',
+        'to_pay'               => 'boolean',
+        'topay_collected'      => 'boolean',
+        'bill_amount'          => 'decimal:2',
+        'frieght_amount'       => 'decimal:2',
+        'sur_ch'               => 'decimal:2',
+        'c_r'                  => 'decimal:2',
+        'other'                => 'decimal:2',
+        'bc_amount'            => 'decimal:2',
+        'total_amount'         => 'decimal:2',
+        'weight'               => 'decimal:3',
+        'nugs'                 => 'integer',
     ];
 
     /**
-     * Get the latest GR number
+     * Get the branch this GR was booked from
      */
-    public static function latestGrNumber()
+    public function fromBranch()
     {
-        $latest = self::latest()->first();
-        return $latest ? $latest->gr_no : null;
+        return $this->belongsTo(Branch::class, 'from_branch_id');
+    }
+
+    /**
+     * Get the branch this GR is destined for
+     */
+    public function toBranch()
+    {
+        return $this->belongsTo(Branch::class, 'to_branch_id');
+    }
+
+    /**
+     * Get the consignor (customer)
+     */
+    public function consignorCustomer()
+    {
+        return $this->belongsTo(Customer::class, 'consignor_id');
+    }
+
+    /**
+     * Get the consignee (customer)
+     */
+    public function consigneeCustomer()
+    {
+        return $this->belongsTo(Customer::class, 'consignee_id');
+    }
+
+    /**
+     * Get the user who created this GR
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    /**
+     * Get gatepasses for this GR (via pivot)
+     */
+    public function gatepasses()
+    {
+        return $this->belongsToMany(gatepass::class, 'gatepass_gr', 'gr_id', 'gatepass_id')
+                    ->withPivot('gr_no')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get challan items for this GR
+     */
+    public function challanItems()
+    {
+        return $this->hasMany(ChallanItem::class);
+    }
+
+    /**
+     * Check if GR has a gatepass
+     */
+    public function hasGatepass()
+    {
+        return $this->gatepasses()->count() > 0;
+    }
+
+    /**
+     * Scope to filter by branch
+     */
+    public function scopeFromBranch($query, $branchId)
+    {
+        return $query->where('from_branch_id', $branchId);
+    }
+
+    /**
+     * Scope to filter by status
+     */
+    public function scopeStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    /**
+     * Scope to filter by office (branch)
+     */
+    public function scopeForOffice($query, $office)
+    {
+        return $query->where('office', $office);
+    }
+
+    /**
+     * Scope to search by GR number
+     */
+    public function scopeSearch($query, $term)
+    {
+        return $query->where('gr_no', 'like', "%{$term}%");
     }
 }

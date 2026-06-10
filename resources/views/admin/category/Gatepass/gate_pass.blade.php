@@ -1,190 +1,194 @@
 @extends('admin.layout.master')
 @section('content')
-<!-- <head>  <link rel="stylesheet" href="{{asset('public/admin/css/gate-pass.css')}}"></head>
- -->
-             <div class="breadcrumbs">
-            <div class="col-sm-4">
-                <div class="page-header float-left">
-                    <div class="page-title">
-                        <h1>Gate Pass</h1>
+
+<div class="breadcrumbs">
+    <div class="col-sm-4"><div class="page-header float-left"><div class="page-title"><h1>Create Gate Pass</h1></div></div></div>
+    <div class="col-sm-8"><div class="page-header float-right"><div class="page-title">
+        <ol class="breadcrumb text-right">
+            <li><a href="{{ url('/dash') }}">Dashboard</a></li>
+            <li><a href="{{ route('gatepass.index') }}">Gate Pass</a></li>
+            <li class="active">Create</li>
+        </ol>
+    </div></div></div>
+</div>
+
+<div class="content mt-3">
+    <div class="animated fadeIn">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <strong>Delivery Gate Pass — {{ $office }}</strong>
+                        <span class="float-right"><span class="badge badge-info">GP No: {{ $gpNo }}</span> &nbsp; {{ $date }}</span>
                     </div>
-                </div>
-            </div>
-            <div class="col-sm-8">
-                <div class="page-header float-right">
-                    <div class="page-title">
-                        <ol class="breadcrumb text-right">
-                            <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                            <li><a href="{{url('/dash/gatepass')}}">Gate Pass Table</a></li>
-                            <li class="active">Gate Pass Create</li>
-                        </ol>
+                    <div class="card-body">
+
+                        @if($errors->any())
+                        <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+                        @endif
+
+                        <form action="{{ route('gatepass.store') }}" method="POST">
+                            @csrf
+
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>From (Origin) <span class="text-danger">*</span></label>
+                                        <input type="text" name="from_dest" class="form-control" value="{{ $office }}" readonly placeholder="Origin branch">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>To (Destination) <span class="text-danger">*</span></label>
+                                        <select name="to_dest" class="form-control" required>
+                                            <option value="">-- Select destination --</option>
+                                            @foreach(\App\Models\Branch::active()->orderBy('branch_name')->pluck('branch_name') as $dest)
+                                                @if($dest !== $office)
+                                                    <option value="{{ $dest }}" {{ old('to_dest') == $dest ? 'selected' : '' }}>{{ $dest }}</option>
+                                                @endif
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Date <span class="text-danger">*</span></label>
+                                        <input type="date" name="gp_date" class="form-control" value="{{ old('gp_date', now()->format('Y-m-d')) }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Vehicle <span class="text-danger">*</span></label>
+                                        <select name="vehicle_id" class="form-control" required>
+                                            <option value="">-- Select vehicle --</option>
+                                            @foreach($vehicles as $v)
+                                                <option value="{{ $v->id }}" {{ old('vehicle_id') == $v->id ? 'selected' : '' }}>{{ $v->vehicle_number }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Driver <span class="text-danger">*</span></label>
+                                        <select name="driver_id" class="form-control" required>
+                                            <option value="">-- Select driver --</option>
+                                            @foreach($drivers as $d)
+                                                <option value="{{ $d->id }}" {{ old('driver_id') == $d->id ? 'selected' : '' }}>{{ $d->driver_name ?? $d->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr style="margin:8px 0">
+                            <div class="form-section-title">Select GRs to Dispatch</div>
+                            <small class="text-muted d-block mb-2">Search un-dispatched GRs from your office and add them to this gate pass</small>
+
+                            <div class="form-group">
+                                <input type="text" id="gr-search" class="form-control" placeholder="Type GR number, consignor or consignee to search...">
+                            </div>
+                            <div id="gr-results" class="mb-2"></div>
+
+                            <table class="table table-bordered table-sm" id="selected-grs-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>GR No</th>
+                                        <th>Consignor</th>
+                                        <th>Consignee</th>
+                                        <th>Route</th>
+                                        <th>Amount (₹)</th>
+                                        <th style="width:50px">Remove</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if($preSelectedGr)
+                                    <tr data-gr-id="{{ $preSelectedGr->id }}">
+                                        <td>{{ $preSelectedGr->gr_no }}<input type="hidden" name="gr_ids[]" value="{{ $preSelectedGr->id }}"></td>
+                                        <td>{{ $preSelectedGr->consignor }}</td>
+                                        <td>{{ $preSelectedGr->consignee }}</td>
+                                        <td>{{ $preSelectedGr->from_dest }} → {{ $preSelectedGr->to_dest }}</td>
+                                        <td class="text-right">{{ number_format($preSelectedGr->total_amount, 2) }}</td>
+                                        <td><button type="button" class="btn btn-danger btn-sm remove-gr"><i class="fa fa-times"></i></button></td>
+                                    </tr>
+                                    @endif
+                                </tbody>
+                            </table>
+                            <p id="no-gr-msg" class="text-muted {{ $preSelectedGr ? 'd-none' : '' }}"><em>No GRs selected. Search above to add GRs to this gate pass.</em></p>
+
+                            <div class="form-group">
+                                <label>Remarks</label>
+                                <textarea name="remarks" class="form-control" rows="2" placeholder="Enter optional remarks or special instructions...">{{ old('remarks') }}</textarea>
+                            </div>
+
+                            <hr>
+                            <button type="submit" class="btn btn-success btn-block">Create Gate Pass</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-      <div class="content mt-3">
-            <div class="animated fadeIn">
-                <div class="row">
-                  <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="row">
-                                <div class="col-6" >
-                                    <strong class="card-title">Delivery Gate Pass</strong>
-                                </div>
-                                <div class="col-6" >
-                                    <strong style="float:right" class="card-title">GST No.: 24AFSPJ7382P1ZI</strong>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                          <!-- Credit Card -->
-                          <div id="pay-invoice">
-                              <div class="card-body">
-                                  <div class="card-title">
-                                      <h3 class="text-center">SAURASHTRA EXPRESS</h3>
-                                      <p style="text-align: center;">H. O. :- 2- Patel Nagar, Bhoja Bhagat Street, 50ft Ring Road, Rajkot. <br>
-                                      Contact No. : 097279 00008, 93750 88088</p>
-                                  </div>
-                                  <hr>
-                                   @if(\Session::has('success'))
-                                  <div class="alert alert-success">
-                                    <p>{{\Session::get('success')}}</p>
-                                  </div>
-                                  @endif
-                                  
-                                  
-                                  @if ($errors->any())
-                                      <div class="alert alert-danger">
-                                          <ul>
-                                              @foreach ($errors->all() as $error)
-                                                  <li>{{ $error }}</li>
-                                              @endforeach
-                                          </ul>
-                                      </div>
-                                  @endif
-                                   <form action="{{url('/dash/gatepass/store')}}" method="post" novalidate="novalidate">
-                                    @csrf
-                                        <div class="row">
-                                            <div class="col-12">
-                                                <h5 class="text-center">Patel Nagar</h5>
-                                                <br>
-                                            </div>
-                                            <div class="col-12 col-lg-5">
-                                              <label for="x_card_code" class="control-label mb-1"><strong>G. P. No.</strong></label>
-                                              <div class="input-group">
-                                                  <input name="gp_no" value="{{$gp_no}}"type="text" class="form-control cc-name valid" readonly>
-                                                  </div>
-                                              </div>
-                                              <div class="col-lg-2">
-                                              </div>
-                                              <div class="col-12 col-lg-5">
-                                              <label for="x_card_code" class="control-label mb-1"><strong>Date</strong></label>
-                                              <div class="input-group">
-                                                 <input name="gp_date" type="text" value="{{$date}}" class="form-control cc-name valid" readonly>
-                                                 </div>                                         
-                                              </div>
-                                              <div class="col-12">
-                                                  <div class="form-group" >
-                                                <label for="company" class=" form-control-label"><strong>M/s.</strong></label>
-                                                <input type="text" id="company" placeholder=""value="{{$gr->consignor}}" name="m_s" class="form-control">
-                                            </div>
-                                              </div>
-                                          </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('gr-search');
+    const resultsDiv = document.getElementById('gr-results');
+    const tbody = document.querySelector('#selected-grs-table tbody');
+    const noMsg = document.getElementById('no-gr-msg');
+    let timer;
 
-                                       <div class="row">
-                                            <div class="col-12 col-lg-6">
-                                              <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>From</strong></label>
-                                                   <select name="from_dest" id="select"class="form-control">
-    <option value="Kashmore Gate" {{ $gr->from_dest == 'Kashmore Gate' ? 'selected' : '' }}>Kashmore Gate</option>
-    <option value="Dayabasti" {{ $gr->from_dest == 'Dayabasti' ? 'selected' : '' }}>Dayabasti</option>
-    <option value="Swarup Nagar" {{ $gr->from_dest == 'Swarup Nagar'? 'selected' : '' }}>Swarup Nagar</option>
-    <option value="Navagam" {{ $gr->from_dest == 'Navagam' ? 'selected' : '' }}>Navagam</option>
-    <option value="Shapar (1)" {{ $gr->from_dest == 'Shapar (1)' ? 'selected' : '' }}>Shapar (1)</option>
-    <option value="Shapar (2)" {{ $gr->from_dest == 'Shapar (2)' ? 'selected' : '' }}>Shapar (2)</option>
-                                                   </select>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                          </div>
-                                          <div class="col-12 col-lg-6">
-                                              <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>To</strong></label>
-                                                   <select name="to_dest" id="select" class="form-control">
-                                                    
-       <option value="Kashmore Gate" {{ $gr->to_dest == 'Kashmore Gate' ? 'selected' : '' }}>Kashmore Gate</option>
-    <option value="Dayabasti" {{ $gr->to_dest == 'Dayabasti' ? 'selected' : '' }}>Dayabasti</option>
-    <option value="Swarup Nagar" {{ $gr->to_dest == 'Swarup Nagar' ? 'selected' : '' }}>Swarup Nagar</option>
-    <option value="Navagam" {{ $gr->to_dest == 'Navagam' ? 'selected' : '' }}>Navagam</option>
-    <option value="Shapar (1)" {{ $gr->to_dest == 'Shapar (1)' ? 'selected' : '' }}>Shapar (1)</option>
-    <option value="Shapar (2)" {{ $gr->to_dest == 'Shapar (2)' ? 'selected' : '' }}>Shapar (2)</option>
-                
-                                                   </select>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                          </div>
-                                       </div>
-                                      <table class="table table">
-                                        <thead>
-                                            <tr>
-                                                <td scope="col"></td>
-                                                <td scope="col"></td>
-                                                <td scope="col"></td>
-                                                <td scope="col" style="width: 25%"><strong>Amount Rs.</strong></td>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td scope="row"><strong>G. R. No. :</strong></td>
-                                                <td> <input class="form-control" style="width: 50%" type="text" value="{{$gr->gr_no}}" name="gr_no" readonly></td>
-                                                <td scope="row"><strong>Frieght</strong></td>
-                                                <td> <input class="form-control" style="width: 80%" type="number"  value="{{$gr->frieght_amount}}" name="frieght_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <td scope="row"><strong>Weight :</strong></td>
-                                                <td> <input class="form-control" style="width: 50%"  value="{{$gr->weight}}"type="number"  name="weight"></td>
-                                                <td scope="row"><strong>Labour</strong></td>
-                                                <td> <input class="form-control" style="width: 80%" type="number" value=""  name="labour_amount"></td>
-                                            </tr><tr>
-                                                <td scope="row"><strong>Nugs :</strong></td>
-                                                <td> <input class="form-control" style="width: 50%" type="number"   value="{{$gr->nugs}}"name="nugs"></td>
-                                                <td scope="row"><strong>GST</strong></td>
-                                                <td> <input class="form-control" style="width: 80%" type="number" value="{{$gr->other}}"  name="other"></td>
-                                            </tr><tr>
-                                                <td scope="row"><strong>P. M. :</strong></td>
-                                                <td> <input class="form-control" style="width: 50%"  value="{{$gr->pm}}"type="text"  name="pm"></td>
-                                                <td scope="row"><strong>D. C.</strong></td>
-                                                <td> <input class="form-control" style="width: 80%" type="number"   value=""name="dc_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="2"></td>
-                                                <td scope="row"><strong>TOTAL</strong></td>
-                                                <td><input class="form-control" style="width: 80%" type="number"  value="{{$gr->total_amount}}" name="total_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="4" rowspan="2"><strong>Note:</strong>
-                                                    <textarea name="note" id="textarea-input"  value=""rows="3 " class="form-control"></textarea></td>
-                                               
-                                            </tr>
-                                        </tbody>
-                                        </table>
-                                        </div>
-                                          <div>
-                                          <button id="payment-button" type="submit" class="btn btn-success btn-lg btn-block">
-                                            
-                                              <span id="payment-button-amount">submit</span>
-                                              <span id="payment-button-sending" style="display:none;">Sending…</span>
-                                          </button>
-                                      </div>
-                                      </form>
-                                      <br>
-                                        </div>
-                                      </div>
-                              </div>
-                          </div>
-                        </div>
-                    </div> <!-- .card -->
-            </div><!-- .animated -->
-        </div><!-- .content -->
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timer);
+        const q = this.value.trim();
+        if (q.length < 2) { resultsDiv.innerHTML = ''; return; }
+
+        timer = setTimeout(() => {
+            fetch(`{{ route('gr.autocomplete') }}?q=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML = '<div class="alert alert-light py-1">No matching GRs found.</div>';
+                        return;
+                    }
+                    let html = '<div class="list-group">';
+                    data.forEach(gr => {
+                        if (document.querySelector(`tr[data-gr-id="${gr.id}"]`)) return;
+                        html += `<a href="#" class="list-group-item list-group-item-action gr-result py-1" data-id="${gr.id}" data-grno="${gr.gr_no}" data-consignor="${gr.consignor}" data-consignee="${gr.consignee}" data-from="${gr.from_dest}" data-to="${gr.to_dest}" data-amount="${gr.total_amount}">
+                            <strong>${gr.gr_no}</strong> — ${gr.consignor} → ${gr.consignee} | ${gr.from_dest} → ${gr.to_dest} (₹${Number(gr.total_amount).toFixed(2)})
+                        </a>`;
+                    });
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                });
+        }, 300);
+    });
+
+    resultsDiv.addEventListener('click', function(e) {
+        const item = e.target.closest('.gr-result');
+        if (!item) return;
+        e.preventDefault();
+        const id = item.dataset.id;
+        const row = `<tr data-gr-id="${id}">
+            <td>${item.dataset.grno}<input type="hidden" name="gr_ids[]" value="${id}"></td>
+            <td>${item.dataset.consignor}</td>
+            <td>${item.dataset.consignee}</td>
+            <td>${item.dataset.from} → ${item.dataset.to}</td>
+            <td class="text-right">${Number(item.dataset.amount).toFixed(2)}</td>
+            <td><button type="button" class="btn btn-danger btn-sm remove-gr"><i class="fa fa-times"></i></button></td>
+        </tr>`;
+        tbody.insertAdjacentHTML('beforeend', row);
+        noMsg.classList.add('d-none');
+        resultsDiv.innerHTML = '';
+        searchInput.value = '';
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-gr')) {
+            e.target.closest('tr').remove();
+            if (tbody.children.length === 0) noMsg.classList.remove('d-none');
+        }
+    });
+});
+</script>
 @endsection

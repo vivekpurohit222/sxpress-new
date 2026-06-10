@@ -3,576 +3,701 @@
 namespace App\Http\Controllers\dash;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\Gr;
+use App\Models\Branch;
+use App\Models\BranchSerial;
+use App\Models\Consignor;
+use App\Models\Consignee;
+use App\Events\GRCreated;
+use App\Events\GRDelivered;
+use App\Events\PODUploaded;
+use App\Rules\GstNumberRule;
+use App\Services\GrWorkflowService;
+use App\Traits\OfficeScopeTrait;
 use Carbon\Carbon;
-use App\Models\User;
-use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class GrController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {       $copies_list_page='Copies List';
-            /*$copies=gr::all();*/
-            $ci = Auth::user()->office;
-            $copies =DB::table('users')
-                ->leftjoin('grs','grs.from_dest','=','office')
-                ->select('grs.*','users.office')
-                ->where('grs.from_dest', '=',$ci)
-                ->get();
+    use OfficeScopeTrait;
 
-            
+    private GrWorkflowService $workflow;
 
-            return view('admin.category.copies_list',compact('copies','copies_list_page'));
-
+    public function __construct(GrWorkflowService $workflow)
+    {
+        $this->middleware('auth');
+        $this->workflow = $workflow;
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Display a listing of GRs.
+     */
+    public function index(Request $request)
+    {
+        $query = Gr::query();
+
+        // Office scope (SuperAdmin sees all)
+        $query = $this->officeScope($query);
+
+        // Search
+        if ($s = $request->search) {
+            $query->where(function ($q) use ($s) {
+                $q->where('gr_no', 'like', "%{$s}%")
+                  ->orWhere('consignor', 'like', "%{$s}%")
+                  ->orWhere('consignee', 'like', "%{$s}%")
+                  ->orWhere('from_dest', 'like', "%{$s}%")
+                  ->orWhere('to_dest', 'like', "%{$s}%");
+            });
+        }
+
+        // Status filter
+        if ($status = $request->status) {
+            $query->where('status', $status);
+        }
+
+        // Date range
+        if ($from = $request->from_date) {
+            $query->whereDate('copy_date', '>=', $from);
+        }
+        if ($to = $request->to_date) {
+            $query->whereDate('copy_date', '<=', $to);
+        }
+
+        // Paid/ToPay filter
+        if ($request->payment === 'paid') {
+            $query->where('paid', 1);
+        }
+        if ($request->payment === 'to_pay') {
+            $query->where('to_pay', 1);
+        }
+
+        // SuperAdmin branch filter
+        if ($this->isSuperAdmin() && $branch = $request->branch) {
+            $query->where('office', $branch);
+        }
+
+        $copies = $query->latest()->paginate(25)->withQueryString();
+        $branches = $this->getBranchOptions();
+
+        $copies_list_page = 'GR List';
+
+        return view('admin.category.copies_list', compact('copies', 'copies_list_page', 'branches'));
+    }
+
+    /**
+     * Show the form for creating a new GR.
      */
     public function create()
     {
-        $users = auth()->user();
-        $ci = Auth::user()->office;
-        $gr_no = DB::table('grs')
-            ->join('users','users.office','=','from_dest')
-            ->select('grs.gr_no')
-            ->latest('grs.created_at')->first()->gr_no;
+        $user = auth()->user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
-        $office =new User();
-        $officecenter = $office->officeall();
-        
-        // switch ($officecenter) {
-        //     case "Rajkot":
-        //                     $gr_no = DB::table('grs')
-        //                     ->join('users','users.office','=','from_dest')
-        //                     ->select('grs.gr_no')
-        //                     ->latest('grs.created_at')->first()->gr_no;
-        //                 $numeric_id = intval(substr($gr_no, 3)); //retrieve numeric value of 'V001' (1)
-        //                 $numeric_id++; //increment
-        //                 if(mb_strlen($numeric_id) == 1)
-        //                 {
-        //                     $zero_string = '0000';
-        //                 }elseif(mb_strlen($numeric_id) == 2)
-        //                 {
-        //                     $zero_string = '000';
-        //                 }elseif(mb_strlen($numeric_id) == 3){
-        //                     $zero_string = '00';
-        //                 }elseif(mb_strlen($numeric_id) == 4){
-        //                     $zero_string = '0';
-        //                 }else{
-        //                     $zero_string = '';
-        //                 }
-        //                 $grini = substr($gr_no, 0,2);
-        //                 if($zero_string=='' and $numeric_id == 10001){
-        //                     $grini++;
-        //                     $numeric_id= '00001';
-        //                 }
+        $office = $user->office;
+        $newGrNo = $this->generateGrNumber($office);
+        $date = Carbon::now()->format('d-m-y');
 
-        //                 $new_id = $grini.'-'.$zero_string.$numeric_id;
-        //                 $date = Carbon::now();
-        //                 $date=date('d-m-y');
-        //                 return view('admin.category.copies',compact('new_id','date','users'));
-        //             break;
-        //     case "Navagam":
-        //                  /*$gr_no = gr::latest()->first()->gr_no;*/
-        //                     $gr_no = DB::table('grs')
-        //                     ->join('users','users.office','=','from_dest')
-        //                     ->select('grs.gr_no')
-        //                     ->latest('grs.created_at')->first()->gr_no;
-        //                 if($gr_no == 'Null'){
-        //                     $gr_no=='AA-10001';
-        //                 }
-        //                 $numeric_id = intval(substr($gr_no, 3)); //retrieve numeric value of 'V001' (1)
-        //                 $numeric_id++; //increment
-        //                 if(mb_strlen($numeric_id) == 1)
-        //                 {
-        //                     $zero_string = '0000';
-        //                 }elseif(mb_strlen($numeric_id) == 2)
-        //                 {
-        //                     $zero_string = '000';
-        //                 }elseif(mb_strlen($numeric_id) == 3){
-        //                     $zero_string = '00';
-        //                 }elseif(mb_strlen($numeric_id) == 4){
-        //                     $zero_string = '0';
-        //                 }else{
-        //                     $zero_string = '';
-        //                 }
-        //                 $grini = substr($gr_no, 0,2);
-        //                 if($numeric_id == 20000){
-        //                     $grini++;
-        //                     $numeric_id= '10001';
-        //                 }
-        //                 $new_id = $grini.'-'.$zero_string.$numeric_id;
-        //                 $date = Carbon::now();
-        //                 $date=date('d-m-y');
-        //                 return view('admin.category.copies',compact('new_id','date','users'));
-        //              break;
-        //     case "Kashmore Gate":
-        //                     /*$gr_no = gr::latest()->first()->gr_no;*/
-        //                     $gr_no = DB::table('grs')
-        //                     ->join('users','users.office','=','from_dest')
-        //                     ->select('grs.gr_no')
-        //                     ->latest('grs.created_at')->first()->gr_no;
-        //                 if($gr_no == 'Null'){
-        //                     $gr_no=='AA-20001';
-        //                 }
-        //                 $numeric_id = intval(substr($gr_no, 3)); //retrieve numeric value of 'V001' (1)
-        //                 $numeric_id++; //increment
-        //                 if(mb_strlen($numeric_id) == 1)
-        //                 {
-        //                     $zero_string = '0000';
-        //                 }elseif(mb_strlen($numeric_id) == 2)
-        //                 {
-        //                     $zero_string = '000';
-        //                 }elseif(mb_strlen($numeric_id) == 3){
-        //                     $zero_string = '00';
-        //                 }elseif(mb_strlen($numeric_id) == 4){
-        //                     $zero_string = '0';
-        //                 }else{
-        //                     $zero_string = '';
-        //                 }
-        //                 $grini = substr($gr_no, 0,2);
-        //                 if($numeric_id == 30001){
-        //                     $grini++;
-        //                     $numeric_id= '00001';
-        //                 }
-        //                 $new_id = $grini.'-'.$zero_string.$numeric_id;
-        //                 $date = Carbon::now();
-        //                 $date=date('d-m-y');
-        //                 return view('admin.category.copies',compact('new_id','date','users'));
-        //       break;
-        //     default:
-        //       /*$gr_no = gr::latest()->first()->gr_no;*/
-        //         $gr_no = DB::table('grs')
-        //             ->join('users','users.office','=','from_dest')
-        //             ->select('grs.gr_no')
-        //             ->latest('grs.created_at')->first()->gr_no;
-        //         if($gr_no == 'Null'){
-        //             $gr_no=='AA-30001';
-        //         }
-        //         $numeric_id = intval(substr($gr_no, 3)); //retrieve numeric value of 'V001' (1)
-        //         $numeric_id++; //increment
-        //         if(mb_strlen($numeric_id) == 1)
-        //         {
-        //             $zero_string = '0000';
-        //         }elseif(mb_strlen($numeric_id) == 2)
-        //         {
-        //             $zero_string = '000';
-        //         }elseif(mb_strlen($numeric_id) == 3){
-        //             $zero_string = '00';
-        //         }elseif(mb_strlen($numeric_id) == 4){
-        //             $zero_string = '0';
-        //         }else{
-        //             $zero_string = '';
-        //         }
-        //         $grini = substr($gr_no, 0,2);
-        //         if($numeric_id == 40001){
-        //             $grini++;
-        //             $numeric_id= '00001';
-        //         }
-        //         $new_id = $grini.'-'.$numeric_id;
-        //         $date = Carbon::now();
-        //         $date=date('d-m-y');
-        //         return view('admin.category.copies',compact('new_id','date','users'));
-        //   }
-            if(strcmp($officecenter,"Rajkot")==0){
-                /*$gr_no = gr::latest()->first()->gr_no;*/
-                $gr_no = DB::table('grs')
-                    ->join('users','users.office','=','from_dest')
-                    ->select('grs.gr_no')
-                    ->latest('grs.created_at')->first()->gr_no;
-                $numeric_id = intval(substr($gr_no, 3)); //retrieve numeric value of 'AA-00001' (1)
-                $numeric_id++; //increment
-                if(mb_strlen($numeric_id) == 1)
-                {
-                    $zero_string = '0000';
-                }elseif(mb_strlen($numeric_id) == 2)
-                {
-                    $zero_string = '000';
-                }elseif(mb_strlen($numeric_id) == 3){
-                    $zero_string = '00';
-                }elseif(mb_strlen($numeric_id) == 4){
-                    $zero_string = '0';
-                }else{
-                    $zero_string = '';
-                }
-                $grini = substr($gr_no, 0,2);
-                if($zero_string=='' and $numeric_id == 10001){
-                    $grini++;
-                    $numeric_id= '00001';
-                }
+        // Load destinations dynamically from branches table
+        $destinations = Branch::active()->orderBy('branch_name')->pluck('branch_name')->all();
 
-                $new_id = $grini.'-'.$zero_string.$numeric_id;
-                $date = Carbon::now();
-                $date=date('d-m-y');
-                return view('admin.category.copies',compact('new_id','date','users'));
-            }
-            elseif(strcmp($officecenter,"Navagam")==0){
-                /*$gr_no = gr::latest()->first()->gr_no;*/
-                $gr_no = DB::table('grs')
-                    ->join('users','users.office','=','from_dest')
-                    ->select('grs.gr_no')
-                    ->latest('grs.created_at')->first()->gr_no;
-                if($gr_no == 'Null'){
-                    $gr_no=='AA-10001';
-                }
-                $numeric_id = intval(substr($gr_no, 3)); //retrieve numeric value of 'V001' (1)
-                $numeric_id++; //increment
-                if(mb_strlen($numeric_id) == 1)
-                {
-                    $zero_string = '0000';
-                }elseif(mb_strlen($numeric_id) == 2)
-                {
-                    $zero_string = '000';
-                }elseif(mb_strlen($numeric_id) == 3){
-                    $zero_string = '00';
-                }elseif(mb_strlen($numeric_id) == 4){
-                    $zero_string = '0';
-                }else{
-                    $zero_string = '';
-                }
-                $grini = substr($gr_no, 0,2);
-                if($numeric_id == 20000){
-                    $grini++;
-                    $numeric_id= '10001';
-                }
-                $new_id = $grini.'-'.$zero_string.$numeric_id;
-                $date = Carbon::now();
-                $date=date('d-m-y');
-                return view('admin.category.copies',compact('new_id','date','users'));
-            }
-            elseif (strcmp($officecenter,"Kashmore Gate")== 0 ){
-                /*$gr_no = gr::latest()->first()->gr_no;*/
-                $gr_no = DB::table('grs')
-                    ->join('users','users.office','=','from_dest')
-                    ->select('grs.gr_no')
-                    ->latest('grs.created_at')->first()->gr_no;
-                if($gr_no == 'Null'){
-                    $gr_no=='AA-20001';
-                }
-                $numeric_id = intval(substr($gr_no, 3)); //retrieve numeric value of 'V001' (1)
-                $numeric_id++; //increment
-                if(mb_strlen($numeric_id) == 1)
-                {
-                    $zero_string = '0000';
-                }elseif(mb_strlen($numeric_id) == 2)
-                {
-                    $zero_string = '000';
-                }elseif(mb_strlen($numeric_id) == 3){
-                    $zero_string = '00';
-                }elseif(mb_strlen($numeric_id) == 4){
-                    $zero_string = '0';
-                }else{
-                    $zero_string = '';
-                }
-                $grini = substr($gr_no, 0,2);
-                if($numeric_id == 30001){
-                    $grini++;
-                    $numeric_id= '00001';
-                }
-                $new_id = $grini.'-'.$zero_string.$numeric_id;
-                $date = Carbon::now();
-                $date=date('d-m-y');
-                return view('admin.category.copies',compact('new_id','date','users'));
-            }
-            else{
-                /*$gr_no = gr::latest()->first()->gr_no;*/
-                $gr_no = DB::table('grs')
-                    ->join('users','users.office','=','from_dest')
-                    ->select('grs.gr_no')
-                    ->latest('grs.created_at')->first()->gr_no;
-                if($gr_no == 'Null'){
-                    $gr_no=='AA-30001';
-                }
-                $numeric_id = intval(substr($gr_no, 3)); //retrieve numeric value of 'V001' (1)
-                $numeric_id++; //increment
-                if(mb_strlen($numeric_id) == 1)
-                {
-                     $zero_string = '0000';
-                }elseif(mb_strlen($numeric_id) == 2)
-                {
-                    $zero_string = '000';
-                }elseif(mb_strlen($numeric_id) == 3){
-                    $zero_string = '00';
-                }elseif(mb_strlen($numeric_id) == 4){
-                    $zero_string = '0';
-                }else{
-                    $zero_string = '';
-                }
-                $grini = substr($gr_no, 0,2);
-                if($numeric_id == 40001){
-                    $grini++;
-                    $numeric_id= '00001';
-                }
-                $new_id = $grini.'-'.$numeric_id;
-                $date = Carbon::now();
-                $date=date('d-m-y');
-                return view('admin.category.copies',compact('new_id','date','users'));
-             }
+        return view('admin.category.copies', compact('newGrNo', 'date', 'user', 'destinations'));
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Store a newly created GR.
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate($this->grRules(), $this->grValidationMessages());
 
+        // Mutual exclusivity: paid XOR to_pay
+        $paidSelected = (bool) ($validated['paid'] ?? false);
+        $toPaySelected = (bool) ($validated['to_pay'] ?? false);
 
-        'gr_no' => 'required',
-        'from_dest'=> 'required',
-        'to_dest'=> 'required',
-        'consignor'=> 'required',
-        'nor_adress'=> 'required',
-        'nor_gst_no'=>'min:15|max:15',
-        'consignee'=> 'required',
-        'nee_adress'=> 'required',
-        'nee_gst_no'=>'min:15|max:15',
+        if ($paidSelected === $toPaySelected) {
+            return back()->withInput()->withErrors([
+                'paid' => 'Select either Paid OR To-Pay, not both. At least one is required.'
+            ]);
+        }
 
-         'nugs'=>'required',
-         'meth'=>'required',
-        'eway_bill_number'=>'required',
-        'bill_amount'=>'numeric|required',
-        'description'=>'required',
+        // Server-side total recalculation — NEVER trust client total
+        $validated['total_amount'] = $this->computeTotal($validated);
+        $validated['office'] = auth()->user()->office;
+        $validated['status'] = 'created';
+        $validated['created_by_id'] = auth()->id();
 
-        'pm'=>'required',
-        'weight'=>'numeric|required',
+        // Ensure nullable string fields default to empty string (DB has NOT NULL)
+        $validated['pm'] = $validated['pm'] ?? '';
+        $validated['eway_bill_number'] = $validated['eway_bill_number'] ?? '';
+        $validated['consignor_gst_no'] = $validated['consignor_gst_no'] ?? '';
+        $validated['consignee_gst_no'] = $validated['consignee_gst_no'] ?? '';
 
-        'frieght_amount'=>'numeric|required',
-        'sur_ch'=>'numeric|required',
-        'c_r'=>'numeric|required',
-        'other'=>'numeric|required',
-        'bc_amount'=>'numeric|required',
-        'total_amount'=>'numeric|required',
-],[
-       'meth.required'=>"Method of Packages field is Required",
-        'from_dest.required'=>"From Field is Required",
-        'to_dest.required'=>"To Field is Required",
-        'consignor.required'=>"Consignor Name Field is Required",
-        'consignor.alpha_num'=>"Consignor Field accpet alpha numeric charaters",
-        'nor_adress.required'=>"Consignor Adress Field is Required",
-        'nor_gst_no.min(15)'=>"Wrong GST number",
-        'nor_gst_no.max(15)'=>"Wrong GST number",
-        'consignee.required'=>"Consignee Name Field is Required",
-          'description'=>"Description Field is Required",
-           'eway_bill_number.required'=>'E Way bill Number Field is Required',
-            'bill_amount.required'=>'Bill Amount Number Field is Required',
+        // Atomic GR number generation with row locking
+        $validated['gr_no'] = $this->generateGrNumberAtomic($validated['office']);
 
-        'nee_adress'=>"Consignee Adress Field is Required",
-        'nee_gst_no.max(15)'=>"Wrong GST Number",
-        'nee_gst_no.min(15)'=>"Wrong GST Number",
-        'nugs.numberic'=>"Nugs Field accept numberic characters",
+        $gr = Gr::create($validated);
 
-        'pm.required'=>"PM Field is Required",
-        'weight.required'=>"weight Field is Required",
+        // Fire event (wrapped in try-catch so GR creation isn't blocked)
+        try {
+            event(new GRCreated($gr));
+        } catch (\Throwable $e) {
+            // Log but don't fail the request
+            \Log::warning('GRCreated event failed: ' . $e->getMessage());
+        }
 
-        'frieght_amount.required'=>"Frieght Amount Fieldis Required",
-        'sur_ch.required'=>"Sur ch Field is Required",
-        'c_r.required'=>"C R Field is Required",
-        'other.required'=>"GST amount Field is Required",
-        'bc_amount.required'=>"BC Amount Field is Required",
-        'total_amount.required'=>"Total Amount Field accept numberic characters",
-        'pm.numberic'=>"PM Field accept numberic characters",
-        'weight.numeric'=>"weight Field accept numberic characters",
-
-        'frieght_amount.numeric'=>"Frieght Amount Field accept numberic characters",
-        'sur_ch.numberic'=>"Sur ch Field accept numberic characters",
-        'c_r.numberic'=>"C R Field accept numberic characters",
-        'other.numberic'=>"GST amount Field accept numberic characters",
-        'bc_amount.numberic'=>"BC Amount Field accept numberic characters",
-        'total_amount.numberic'=>"Total Amount Field accept numberic characters",]);
-
-          $copy=new Gr([
-
-        'gr_no' => $request->post('gr_no'),
-        'from_dest'=> $request->post('from_dest'),
-        'to_dest'=> $request->post('to_dest'),
-        'copy_date'=>$request->post('copy_date'),
-        'consignor'=> ucwords($request->post('consignor')),
-        'nor_adress'=> $request->post('nor_adress'),
-        'nor_gst_no'=> $request->post('nor_gst_no'),
-        'consignee'=> ucwords($request->post('consignee')),
-        'nee_adress'=> $request->post('nee_adress'),
-        'nee_gst_no'=> $request->post('nee_gst_no'),
-        'nugs'=> $request->post('nugs'),
-       'meth'=>$request->post('meth'),
-       'description'=>$request->post('description'),
-        'pm'=> $request->post('pm'),
-        'weight'=> $request->post('weight'),
-        'paid'=> $request->post('paid'),
-        'to_pay'=> $request->post('to_pay'),
-        'frieght_amount'=> $request->post('frieght_amount'),
-        'sur_ch'=> $request->post('sur_ch'),
-        'c_r'=> $request->post('c_r'),
-        'eway_bill_number'=> $request->post('eway_bill_number'),
-        'bill_amount'=> $request->post('bill_amount'),
-        'other'=> $request->post('other'),
-        'bc_amount'=> $request->post('bc_amount'),
-        'total_amount'=> $request->post('total_amount'),
-
-
-        ]);
-        $copy->save();
-        return Redirect('dash/gr')->with('success','Copy Added successfully');
+        return redirect()->route('gr.index')
+            ->with('success', "GR {$gr->gr_no} created successfully.");
     }
+
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Display the print view for a GR.
      */
     public function show($id)
     {
-         $copy=gr::find($id);
-       return view('admin.category.copies_print',compact('copy','id'));
+        $copy = Gr::findOrFail($id);
+
+        // Office check — users can only print GRs from their own office (SuperAdmin exempt)
+        if (!$this->isSuperAdmin() && $copy->office !== $this->currentOffice()) {
+            abort(403, 'You can only view GRs from your own office.');
+        }
+
+        return view('admin.category.copies_print', compact('copy', 'id'));
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Show the form for editing a GR.
      */
     public function edit($id)
     {
-        $copy=Gr::find($id);
-       return view('admin.category.copies_edit',compact('copy','id'));
+        $gr = Gr::findOrFail($id);
+
+        // Office check
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403, 'You do not have permission to edit this GR.');
+        }
+
+        // After dispatch, only Admin+ can edit
+        if (in_array($gr->status, ['dispatched', 'in_transit', 'delivered', 'closed'])
+            && !Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+            abort(403, 'GR has been dispatched. Only Admin can edit.');
+        }
+
+        // Closed/Cancelled = nobody can edit
+        if (in_array($gr->status, ['closed', 'cancelled'])) {
+            abort(403, "GR is {$gr->status} and cannot be edited.");
+        }
+
+        // Staff can only edit GRs they created (when status = created)
+        if (Auth::user()->hasRole('Staff') && $gr->status === 'created') {
+            if ($gr->created_by_id && $gr->created_by_id !== auth()->id()) {
+                abort(403, 'You can only edit GRs you created.');
+            }
+        }
+
+        // Load destinations dynamically
+        $destinations = Branch::active()->orderBy('branch_name')->pluck('branch_name')->all();
+
+        return view('admin.category.copies_edit', compact('gr', 'id', 'destinations'));
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Update a GR.
      */
     public function update(Request $request, $id)
     {
-          $request->validate([
+        $gr = Gr::findOrFail($id);
 
+        // Office check
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
 
-        'gr_no' => 'required',
-        'from_dest'=> 'required',
-        'to_dest'=> 'required',
-        'consignor'=> 'required',
-        'nor_adress'=> 'required',
-        'nor_gst_no'=>'min:15|max:15',
-        'consignee'=> 'required',
-        'nee_adress'=> 'required',
-        'nee_gst_no'=>'min:15|max:15',
+        // After dispatch, only Admin+ can edit
+        if (in_array($gr->status, ['dispatched', 'in_transit', 'delivered', 'closed'])
+            && !Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+            abort(403, 'GR has been dispatched. Only Admin can edit.');
+        }
 
-         'nugs'=>'required',
-'meth'=>'required',
-'eway_bill_number'=>'required',
-'bill_amount'=>'numeric|required',
+        // Closed/Cancelled = nobody can edit
+        if (in_array($gr->status, ['closed', 'cancelled'])) {
+            abort(403, "GR is {$gr->status} and cannot be edited.");
+        }
 
+        // Staff ownership check
+        if (Auth::user()->hasRole('Staff') && $gr->status === 'created') {
+            if ($gr->created_by_id && $gr->created_by_id !== auth()->id()) {
+                abort(403, 'You can only edit GRs you created.');
+            }
+        }
 
-        'pm'=>'required',
-        'weight'=>'numeric|required',
+        $validated = $request->validate($this->grRules(), $this->grValidationMessages());
 
-        'frieght_amount'=>'numeric|required',
-        'sur_ch'=>'numeric|required',
-        'c_r'=>'numeric|required',
-        'other'=>'numeric|required',
-        'bc_amount'=>'numeric|required',
-        'total_amount'=>'numeric|required',
-],[
+        // Mutual exclusivity check
+        $paidSelected = (bool) ($validated['paid'] ?? false);
+        $toPaySelected = (bool) ($validated['to_pay'] ?? false);
+        if ($paidSelected === $toPaySelected) {
+            return back()->withInput()->withErrors([
+                'paid' => 'Select either Paid OR To-Pay, not both.'
+            ]);
+        }
 
-        'from_dest.required'=>"From Field is Required",
-        'to_dest.required'=>"To Field is Required",
-        'consignor.required'=>"Consignor Name Field is Required",
-        'consignor.alpha_num'=>"Consignor Field accpet alpha numeric charaters",
-        'nor_adress.required'=>"Consignor Adress Field is Required",
-        'nor_gst_no.min(15)'=>"Wrong GST number",
-        'nor_gst_no.max(15)'=>"Wrong GST number",
-        'consignee.required'=>"Consignee Name Field is Required",
-           'meth.required'=>'Meth of Package Field is Required',
-           'eway_bill_number.required'=>'E Way bill Number Field is Required',
-            'bill_amount.required'=>'Bill Amount Number Field is Required',
+        // Server-side total recalculation
+        $validated['total_amount'] = $this->computeTotal($validated);
 
-        'nee_adress'=>"Consignee Adress Field is Required",
-        'nee_gst_no.max(15)'=>"Wrong GST Number",
-        'nee_gst_no.min(15)'=>"Wrong GST Number",
-        'nugs.numberic'=>"Nugs Field accept numberic characters",
+        // Ensure nullable string fields default to empty string
+        $validated['pm'] = $validated['pm'] ?? '';
+        $validated['eway_bill_number'] = $validated['eway_bill_number'] ?? '';
+        $validated['consignor_gst_no'] = $validated['consignor_gst_no'] ?? '';
+        $validated['consignee_gst_no'] = $validated['consignee_gst_no'] ?? '';
 
-        'pm.required'=>"PM Field is Required",
-        'weight.required'=>"weight Field is Required",
+        $gr->update($validated);
 
-        'frieght_amount.required'=>"Frieght Amount Fieldis Required",
-        'sur_ch.required'=>"Sur ch Field is Required",
-        'c_r.required'=>"C R Field is Required",
-        'other.required'=>"GST amount Field is Required",
-        'bc_amount.required'=>"BC Amount Field is Required",
-        'total_amount.required'=>"Total Amount Field accept numberic characters",
-        'pm.numberic'=>"PM Field accept numberic characters",
-        'weight.numeric'=>"weight Field accept numberic characters",
-
-        'frieght_amount.numeric'=>"Frieght Amount Field accept numberic characters",
-        'sur_ch.numberic'=>"Sur ch Field accept numberic characters",
-        'c_r.numberic'=>"C R Field accept numberic characters",
-        'other.numberic'=>"GST amount Field accept numberic characters",
-        'bc_amount.numberic'=>"BC Amount Field accept numberic characters",
-        'total_amount.numberic'=>"Total Amount Field accept numberic characters",]);
-
-          $copy=gr::find($id);
-
-        $copy->gr_no = $request->get('gr_no');
-        $copy->from_dest = $request->get('from_dest');
-        $copy->to_dest = $request->get('to_dest');
-        $copy->copy_date = $request->get('copy_date');
-        $copy->consignor = ucwords($request->get('consignor'));
-        $copy->nor_adress =  $request->get('nor_adress');
-        $copy->nor_gst_no = $request->get('nor_gst_no');
-        $copy->consignee =  ucwords($request->get('consignee')) ;
-        $copy->nee_adress = $request->get('nee_adress');
-        $copy->nee_gst_no =  $request->get('nee_gst_no');
-        $copy->nugs = $request->get('nugs');
-         $copy->meth = $request->get('meth');
-          $copy->nugs = $request->get('nugs');
-          $copy->eway_bill_number = $request->get('eway_bill_number');
-          $copy->bill_amount = $request->get('bill_amount');
-        $copy->description = Str::ucfirst($request->get('description'));
-        $copy->pm = $request->get('pm');
-        $copy->weight = $request->get('weight');
-        $copy->paid = $request->get('paid');
-        $copy->to_pay = $request->get('to_pay');
-        $copy->frieght_amount = $request->get('frieght_amount');
-        $copy->sur_ch = $request->get('sur_ch');
-        $copy->c_r = $request->get('c_r');
-        $copy->other = $request->get('other');
-        $copy->bc_amount = $request->get('bc_amount');
-        $copy->total_amount = $request->get('total_amount');
-
-
-
-        $copy->save();
-        return Redirect('dash/gr')->with('success','Copy Updated successfully');
+        return redirect()->route('gr.index')
+            ->with('success', "GR {$gr->gr_no} updated successfully.");
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Delete a GR.
      */
     public function destroy($id)
     {
-        $copy=Gr::find($id);
-        $copy->delete();
-        return Redirect('dash/gr')->with('success','Copy  deleted successfully');
+        $gr = Gr::findOrFail($id);
+
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+            abort(403);
+        }
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        if ($gr->status !== 'created') {
+            return back()->withErrors(['Cannot delete a GR that has been dispatched or is in progress.']);
+        }
+
+        // Block if linked to a Gatepass or Challan
+        if ($gr->gatepasses()->exists() || $gr->challanItems()->exists()) {
+            return back()->withErrors(['Cannot delete GR — it is linked to a Gatepass or Challan.']);
+        }
+
+        $gr->delete();
+
+        return redirect()->route('gr.index')->with('success', 'GR deleted successfully.');
+    }
+
+    /**
+     * GR Autocomplete endpoint for Gatepass/Challan forms.
+     */
+    public function autocomplete(Request $request)
+    {
+        $q = $request->get('q', '');
+
+        $query = Gr::query();
+        $this->officeScope($query);
+
+        // For freight memo — return delivered/dispatched/in_transit GRs
+        if ($request->get('for') === 'freight') {
+            $query->whereIn('status', ['delivered', 'dispatched', 'in_transit']);
+        } else {
+            // Default: only un-dispatched GRs (for Gatepass/Challan)
+            $query->where('status', 'created');
+        }
+
+        $grs = $query
+            ->where(function ($q2) use ($q) {
+                $q2->where('gr_no', 'like', "%{$q}%")
+                   ->orWhere('consignor', 'like', "%{$q}%")
+                   ->orWhere('consignee', 'like', "%{$q}%");
+            })
+            ->select('id', 'gr_no', 'consignor', 'consignee', 'from_dest', 'to_dest',
+                     'nugs', 'meth', 'description', 'weight', 'frieght_amount',
+                     'sur_ch', 'c_r', 'other', 'total_amount')
+            ->limit(10)
+            ->get();
+
+        return response()->json($grs);
+    }
+
+    /**
+     * Autocomplete for consignor.
+     */
+    public function autocompleteConsignor(Request $request)
+    {
+        $q = $request->get('q', '');
+        if (strlen($q) < 2) return response()->json([]);
+
+        $consignors = Consignor::where('consignor_name', 'like', '%' . $q . '%')
+            ->select('id', 'consignor_name as name', 'address', 'city', 'gst_no', 'phone')
+            ->limit(10)
+            ->get();
+
+        $grConsignors = Gr::where('consignor', 'like', '%' . $q . '%')
+            ->select('consignor as name', 'consignor_address as address', 'consignor_gst_no as gst_no')
+            ->distinct()
+            ->limit(10)
+            ->get();
+
+        $results = $consignors->merge($grConsignors)->unique('name')->take(10)->values();
+        return response()->json($results);
+    }
+
+    /**
+     * Autocomplete for consignee.
+     */
+    public function autocompleteConsignee(Request $request)
+    {
+        $q = $request->get('q', '');
+        if (strlen($q) < 2) return response()->json([]);
+
+        $consignees = Consignee::where('consignee_name', 'like', '%' . $q . '%')
+            ->select('id', 'consignee_name as name', 'address', 'city', 'gst_no', 'phone')
+            ->limit(10)
+            ->get();
+
+        $grConsignees = Gr::where('consignee', 'like', '%' . $q . '%')
+            ->select('consignee as name', 'consignee_address as address', 'consignee_gst_no as gst_no')
+            ->distinct()
+            ->limit(10)
+            ->get();
+
+        $results = $consignees->merge($grConsignees)->unique('name')->take(10)->values();
+        return response()->json($results);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // POD METHODS
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * View/Download POD file with access control.
+     * GET /gr/{id}/pod
+     */
+    public function viewPod($id)
+    {
+        $gr = Gr::findOrFail($id);
+
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        if (!$gr->pod_file || !\Storage::disk('public')->exists($gr->pod_file)) {
+            abort(404, 'POD file not found.');
+        }
+
+        return response()->file(\Storage::disk('public')->path($gr->pod_file));
+    }
+
+    public function uploadPodForm($id)
+    {
+        $gr = Gr::findOrFail($id);
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
+        return view('admin.category.gr_upload_pod', compact('gr'));
+    }
+
+    public function uploadPod(Request $request, $id)
+    {
+        $gr = Gr::findOrFail($id);
+
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'pod_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'pod_date' => 'required|date|before_or_equal:today',
+            'pod_note' => 'nullable|string|max:300',
+        ]);
+
+        if (!in_array($gr->status, ['dispatched', 'in_transit'])) {
+            return back()->withErrors(['pod_file' => "Cannot upload POD — GR is '{$gr->status}'."]);
+        }
+
+        $file = $request->file('pod_file');
+        $fileName = 'pod_' . $gr->gr_no . '_' . time() . '.' . $file->getClientOriginalExtension();
+
+        // Delete old POD file if re-uploading
+        if ($gr->pod_file && \Storage::disk('public')->exists($gr->pod_file)) {
+            \Storage::disk('public')->delete($gr->pod_file);
+        }
+
+        $path = $file->storeAs('pods', $fileName, 'public');
+
+        $gr->update([
+            'pod_file'        => $path,  // store full relative path
+            'pod_date'        => $request->pod_date,
+            'pod_note'        => $request->pod_note,
+            'pod_uploaded_by' => auth()->id(),
+        ]);
+
+        // Auto-transition to delivered
+        if ($gr->status === 'in_transit') {
+            $this->workflow->transition($gr, 'delivered', auth()->user());
+        } elseif ($gr->status === 'dispatched') {
+            // Skip in_transit — POD upload goes straight to delivered (per skill §8)
+            $gr->update([
+                'status' => 'delivered',
+                'status_updated_at' => now(),
+                'status_updated_by' => auth()->id(),
+            ]);
+        }
+
+        try {
+            event(new PODUploaded($gr));
+            event(new GRDelivered($gr));
+        } catch (\Throwable $e) {
+            \Log::warning('POD event failed: ' . $e->getMessage());
+        }
+
+        return redirect()->route('gr.edit', $gr->id)
+            ->with('success', 'POD uploaded successfully. GR marked as Delivered.');
+    }
+
+    public function markDelivered(Request $request, $id)
+    {
+        $gr = Gr::findOrFail($id);
+
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        if (!in_array($gr->status, ['dispatched', 'in_transit'])) {
+            return response()->json(['success' => false, 'message' => "GR is '{$gr->status}'."], 422);
+        }
+
+        // in_transit → delivered (valid transition)
+        if ($gr->status === 'in_transit') {
+            $this->workflow->transition($gr, 'delivered', auth()->user());
+        } else {
+            // dispatched → delivered (skip in_transit for direct delivery confirmation)
+            $gr->update([
+                'status' => 'delivered',
+                'status_updated_at' => now(),
+                'status_updated_by' => auth()->id(),
+            ]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'GR marked as delivered.']);
+    }
+
+    public function updateDeliveryStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:dispatched,in_transit,delivered',
+        ]);
+
+        $gr = Gr::findOrFail($id);
+
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        if (!$this->workflow->canTransition($gr, $request->status)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Invalid status transition from '{$gr->status}' to '{$request->status}'."
+            ], 422);
+        }
+
+        $this->workflow->transition($gr, $request->status, auth()->user());
+
+        return response()->json(['success' => true, 'message' => 'Delivery status updated.']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // TO-PAY COLLECTION
+    // ─────────────────────────────────────────────────────────────────
+
+    public function markTopayCollected($id)
+    {
+        $gr = Gr::findOrFail($id);
+
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        if (!$gr->to_pay) {
+            return response()->json(['success' => false, 'message' => 'This GR is Paid — not To-Pay.'], 400);
+        }
+
+        if ($gr->topay_collected) {
+            return response()->json(['success' => false, 'message' => 'Already collected on ' . $gr->topay_collected_date . '.'], 400);
+        }
+
+        $gr->update([
+            'topay_collected'      => true,
+            'topay_collected_date' => now()->toDateString(),
+            'topay_collected_by'   => auth()->id(),
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'TO-PAY marked as collected.']);
+    }
+
+    public function undoTopayCollected($id)
+    {
+        $gr = Gr::findOrFail($id);
+
+        // Only Admin+ can undo a TO-PAY collection
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+            abort(403, 'Only Admin or SuperAdmin can undo a TO-PAY collection.');
+        }
+
+        if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
+            abort(403);
+        }
+
+        $gr->update([
+            'topay_collected'      => false,
+            'topay_collected_date' => null,
+            'topay_collected_by'   => null,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'TO-PAY collection undone.']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Generate GR number with atomic row locking to prevent race conditions.
+     */
+    private function generateGrNumberAtomic(string $office): string
+    {
+        return DB::transaction(function () use ($office) {
+            // Determine prefix
+            $prefix = $this->getGrPrefix($office);
+
+            // Lock and get the last GR with this prefix
+            $lastGr = Gr::where('gr_no', 'like', $prefix . '-%')
+                ->orderByRaw('CAST(SUBSTRING_INDEX(gr_no, \'-\', -1) AS UNSIGNED) DESC')
+                ->lockForUpdate()
+                ->first();
+
+            // Check BranchSerial for start_from
+            $branchSerial = BranchSerial::where('office', $office)->first();
+            $startFrom = $branchSerial ? $branchSerial->start_from : 1;
+
+            $nextNum = $lastGr
+                ? ((int) substr($lastGr->gr_no, strlen($prefix) + 1)) + 1
+                : $startFrom;
+
+            return $prefix . '-' . str_pad($nextNum, 5, '0', STR_PAD_LEFT);
+        });
+    }
+
+    /**
+     * Non-locking GR number generation (for display on create form only).
+     */
+    private function generateGrNumber(string $office): string
+    {
+        $prefix = $this->getGrPrefix($office);
+
+        $lastGr = Gr::where('gr_no', 'like', $prefix . '-%')
+            ->orderByRaw('CAST(SUBSTRING_INDEX(gr_no, \'-\', -1) AS UNSIGNED) DESC')
+            ->first();
+
+        $branchSerial = BranchSerial::where('office', $office)->first();
+        $startFrom = $branchSerial ? $branchSerial->start_from : 1;
+
+        $nextNum = $lastGr
+            ? ((int) substr($lastGr->gr_no, strlen($prefix) + 1)) + 1
+            : $startFrom;
+
+        return $prefix . '-' . str_pad($nextNum, 5, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Get the GR prefix for an office.
+     */
+    private function getGrPrefix(string $office): string
+    {
+        // Priority 1: BranchSerial
+        $branchSerial = BranchSerial::where('office', $office)->first();
+        if ($branchSerial && $branchSerial->gr_prefix) {
+            return $branchSerial->gr_prefix;
+        }
+
+        // Priority 2: Branch.gr_prefix
+        $branch = Branch::where('branch_name', $office)->first();
+        if ($branch && $branch->gr_prefix) {
+            return $branch->gr_prefix;
+        }
+
+        // Priority 3: hardcoded fallback
+        $map = [
+            'Rajkot' => 'AA', 'Kashmore Gate' => 'CG', 'Navagam' => 'NV',
+            'Dayabasti' => 'DB', 'Swarup Nagar' => 'SN',
+            'Shapar (1)' => 'S1', 'Shapar (2)' => 'S2',
+        ];
+        return $map[$office] ?? 'GR';
+    }
+
+    /**
+     * Server-side total amount calculation.
+     */
+    private function computeTotal(array $data): float
+    {
+        return round(
+            floatval($data['frieght_amount'] ?? 0) +
+            floatval($data['sur_ch'] ?? 0) +
+            floatval($data['c_r'] ?? 0) +
+            floatval($data['other'] ?? 0) +
+            floatval($data['bc_amount'] ?? 0),
+            2
+        );
+    }
+
+    /**
+     * GR validation rules.
+     */
+    private function grRules(): array
+    {
+        return [
+            'copy_date'         => 'required|date|before_or_equal:today',
+            'from_dest'         => 'required|string|max:100',
+            'to_dest'           => 'required|string|max:100|different:from_dest',
+            'consignor'         => 'required|string|max:200',
+            'consignor_address' => 'required|string|max:500',
+            'consignor_gst_no'  => ['nullable', 'string', 'max:15', new GstNumberRule()],
+            'consignee'         => 'required|string|max:200',
+            'consignee_address' => 'required|string|max:500',
+            'consignee_gst_no'  => ['nullable', 'string', 'max:15', new GstNumberRule()],
+            'nugs'              => 'required|integer|min:1',
+            'meth'              => 'required|string|in:Bag,Box,Bundle,Drum,Roll,Carton,Loose,Other',
+            'weight'            => 'required|numeric|min:0.01',
+            'description'       => 'required|string|max:500',
+            'pm'                => 'nullable|string|max:50',
+            'eway_bill_number'  => 'nullable|string|max:12',
+            'bill_amount'       => 'nullable|numeric|min:0',
+            'frieght_amount'    => 'required|numeric|min:0',
+            'sur_ch'            => 'nullable|numeric|min:0',
+            'c_r'               => 'nullable|numeric|min:0',
+            'other'             => 'nullable|numeric|min:0',
+            'bc_amount'         => 'nullable|numeric|min:0',
+            'paid'              => 'boolean',
+            'to_pay'            => 'boolean',
+        ];
+    }
+
+    private function grValidationMessages(): array
+    {
+        return [
+            'meth.required'              => 'Package method is required.',
+            'from_dest.required'         => 'From destination is required.',
+            'to_dest.required'           => 'To destination is required.',
+            'to_dest.different'          => 'From and To destinations must be different.',
+            'consignor.required'         => 'Consignor name is required.',
+            'consignor_address.required' => 'Consignor address is required.',
+            'consignee.required'         => 'Consignee name is required.',
+            'consignee_address.required' => 'Consignee address is required.',
+            'nugs.required'              => 'Number of packages is required.',
+            'nugs.min'                   => 'At least 1 package is required.',
+            'weight.min'                 => 'Weight must be greater than 0.',
+            'eway_bill_number.max'       => 'E-Way bill number cannot exceed 12 characters.',
+        ];
     }
 }
-

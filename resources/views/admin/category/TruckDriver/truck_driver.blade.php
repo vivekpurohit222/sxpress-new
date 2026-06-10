@@ -6,7 +6,7 @@
             <div class="col-sm-4">
                 <div class="page-header float-left">
                     <div class="page-title">
-                        <h1>Truck Detail</h1>
+                        <h1>Add Truck Driver</h1>
                     </div>
                 </div>
             </div>
@@ -16,7 +16,7 @@
                         <ol class="breadcrumb text-right">
                             <li><a href="{{url('/dash')}}">Dashboard</a></li>
                             <li><a href="{{url('/dash/truckdriver')}}">Truck Driver Details</a></li>
-                            <li class="active">Truck Detail</li>
+                            <li class="active">Add Truck Driver</li>
                         </ol>
                     </div>
                 </div>
@@ -29,12 +29,7 @@
                   <div class="col-lg-12">
                     <div class="card">
                         <div class="card-header">
-                            <div class="row">
-                                <div class="col-6" >
-                                    <strong class="card-title">Truck Detail</strong>
-                                </div>
-                                
-                            </div>
+                            <strong class="card-title">Add Truck Driver</strong>
                         </div>
                         <div class="card-body">
                           <!-- Credit Card -->
@@ -42,7 +37,6 @@
                               <div class="card-body">
                                   <div class="card-title">
                                       <h3 class="text-center">SAURASHTRA EXPRESS</h3>
-                                      
                                   </div>
                                   <hr>
                                    @if(\Session::has('success'))
@@ -50,8 +44,8 @@
                                     <p>{{\Session::get('success')}}</p>
                                   </div>
                                   @endif
-                                  
-                                  
+
+
                                   @if ($errors->any())
                                       <div class="alert alert-danger">
                                           <ul>
@@ -64,62 +58,64 @@
                                    <form action="{{url('/dash/truckdriver/store')}}" method="post" novalidate="novalidate">
                                     @csrf
                                         <div class="row">
-                                            
-                                            
-                                              <div class="col-12">
+
+                                              <div class="col-12 col-lg-6">
                                                   <div class="form-group" >
-                                                <label for="company" class=" form-control-label"><strong>Truck No.</strong></label>
-                                                <input type="text" id="company" placeholder="GJ 05 JK 7896"value=""style="text-transform:uppercase" name="truck_no" class="form-control">
-                                            </div>
-                                              </div>
-                                              <div class="col-12">
-                                                  <div class="form-group" >
-                                                <label for="company" class=" form-control-label"><strong>Driver Name</strong></label>
-                                                <input type="text" id="company" placeholder=""value="" name="driver_name" class="form-control">
-                                            </div>
-                                              </div>
-                                              <div class="col-12">
-                                                  <div class="form-group" >
-                                                <label for="company" class=" form-control-label"><strong>License No.</strong></label>
-                                                <input type="text" style="text-transform:uppercase"id="company" placeholder="GJ14 20160034761"value="" name="license" class="form-control">
-                                            </div>
-                                              </div>
-                                              <div class="col-12 ">
-                                                  <div class="form-group" >
-                                                <label for="company" class=" form-control-label"><strong>Address</strong></label>
-                                                <input type="text" id="company" placeholder=""value="" name="driver_address" class="form-control">
+                                                <label for="truck_no" class=" form-control-label"><strong>Truck No. *</strong></label>
+                                                <input type="text" id="truck_no" placeholder="GJ 05 JK 7896" value="{{ old('truck_no') }}" style="text-transform:uppercase" name="truck_no" class="form-control" required>
                                             </div>
                                               </div>
                                               <div class="col-12 col-lg-6">
                                                   <div class="form-group" >
-                                                <label for="company" class=" form-control-label"><strong>Mobile No</strong></label>
-                                                <input type="number" id="company" placeholder=""value="" name="mobile_no1" class="form-control">
+                                                <label for="driver_name" class=" form-control-label"><strong>Driver Name *</strong></label>
+                                                <input type="text" id="driver_name" placeholder="" value="{{ old('driver_name') }}" name="driver_name" class="form-control" required>
                                             </div>
                                               </div>
                                               <div class="col-12 col-lg-6">
                                                   <div class="form-group" >
-                                                <label for="company" class=" form-control-label"><strong>Other Mobile No</strong></label>
-                                                <input type="number" id="company" placeholder=""value="" name="mobile_no2" class="form-control">
+                                                <label for="license" class=" form-control-label"><strong>License No. *</strong></label>
+                                                <input type="text" style="text-transform:uppercase" id="license" placeholder="GJ14 20160034761" value="{{ old('license') }}" name="license" class="form-control" required>
                                             </div>
+                                              </div>
+                                              <div class="col-12 col-lg-6">
+                                                  <div class="form-group" >
+                                                <label for="driver_address" class=" form-control-label"><strong>Address *</strong></label>
+                                                <input type="text" id="driver_address" placeholder="" value="{{ old('driver_address') }}" name="driver_address" class="form-control" required>
+                                            </div>
+                                              </div>
+                                              <div class="col-12 col-lg-6">
+                                                  <div class="form-group" >
+                                                <label for="mobile_no1" class=" form-control-label"><strong>Mobile No</strong></label>
+                                                <input type="text" id="mobile_no1" placeholder="" value="{{ old('mobile_no1') }}" name="mobile_no1" class="form-control">
+                                            </div>
+                                              </div>
+                                              <div class="col-12 col-lg-6">
+                                                  <div class="form-group" >
+                                                <label for="mobile_no2" class=" form-control-label"><strong>Other Mobile No</strong></label>
+                                                <input type="text" id="mobile_no2" placeholder="" value="{{ old('mobile_no2') }}" name="mobile_no2" class="form-control">
+                                            </div>
+                                              </div>
+                                              <div class="col-12 col-lg-6">
+                                                  <div class="form-group" >
+                                                    <div class="form-check mt-4 pt-2">
+                                                        <input type="checkbox" class="form-check-input" id="status" name="status" checked>
+                                                        <label class="form-check-label" for="status">Active</label>
+                                                    </div>
+                                                </div>
                                               </div>
                                           </div>
 
-                              
-                                        </tbody>
-                                        </table>
-                                        </div>
                                           <div>
                                           <button id="payment-button" type="submit" class="btn btn-success btn-lg btn-block">
-                                            
-                                              <span id="payment-button-amount">submit</span>
+                                              <span id="payment-button-amount">Submit</span>
                                               <span id="payment-button-sending" style="display:none;">Sending…</span>
                                           </button>
                                       </div>
                                       </form>
                                       <br>
+                                      <a href="{{ url('/dash/truckdriver') }}" class="btn btn-default">Cancel</a>
                                         </div>
                                       </div>
-                              </div>
                           </div>
                         </div>
                     </div> <!-- .card -->

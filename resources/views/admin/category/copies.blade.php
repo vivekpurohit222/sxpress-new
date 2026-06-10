@@ -1,224 +1,545 @@
 @extends('admin.layout.master')
 @section('content')
 
- 
-<div class="breadcrumbs">
-            <div class="col-sm-4">
-                <div class="page-header float-left">
-                    <div class="page-title">
-                        <h1>Create G R </h1>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-8">
-                <div class="page-header float-right">
-                    <div class="page-title">
-                        <ol class="breadcrumb text-right">
-                            <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                            <li><a href="{{url('/dash/gr')}}">Available G R</a></li>
+<style>
+    .gr-form {
+        font-size: 12px;
+    }
+    .gr-form .form-group {
+        margin-bottom: 6px;
+    }
+    .gr-form label {
+        margin-bottom: 1px;
+        font-size: 11px;
+    }
+    .gr-form .form-control {
+        padding: 3px 6px;
+        font-size: 12px;
+        height: 28px;
+    }
+    .gr-form textarea.form-control {
+        height: 52px;
+        resize: none;
+    }
+    .gr-form table {
+        font-size: 11px;
+        margin-bottom: 6px;
+    }
+    .gr-form table th,
+    .gr-form table td {
+        padding: 3px 5px;
+        vertical-align: middle;
+    }
+    .gr-form table .form-control {
+        height: 24px;
+        padding: 2px 4px;
+        font-size: 11px;
+    }
+    .gr-form .btn {
+        padding: 5px 20px;
+        font-size: 12px;
+    }
+    .gr-form .card {
+        margin-bottom: 0;
+    }
+    .gr-form .card-body {
+        padding: 6px 12px;
+    }
+    .gr-form .card-header {
+        padding: 6px 15px;
+    }
+    .gr-form .card-title h3 {
+        font-size: 14px;
+        margin: 0;
+    }
+    .gr-form .card-title p {
+        font-size: 10px;
+        margin: 1px 0 0;
+    }
+    .gr-form hr {
+        margin: 6px 0;
+    }
+    .gr-form .page-title h1 {
+        font-size: 18px;
+    }
+    .gr-form .page-title {
+        line-height: 1.2;
+    }
+    .gr-form .content {
+        margin-top: 0.5rem;
+        overflow: hidden;
+    }
+    .gr-form .breadcrumbs {
+        padding: 0.4rem 0;
+        margin-bottom: 0;
+    }
+    .gr-form .content.mt-2 {
+        overflow-x: auto;
+    }
+    body {
+        overflow-x: hidden;
+    }
+    .autocomplete-wrapper {
+        position: relative;
+    }
+    .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        max-height: 120px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .autocomplete-dropdown.show {
+        display: block;
+    }
+    .autocomplete-item {
+        padding: 5px 8px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 11px;
+    }
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+    .autocomplete-item:hover {
+        background: #f8f9ff;
+    }
+    .autocomplete-item .name {
+        font-weight: 600;
+        color: #333;
+    }
+    .autocomplete-item .details {
+        font-size: 9px;
+        color: #888;
+    }
+    .has-error {
+        border-color: #dc3545 !important;
+    }
+    .gr-form .alert {
+        padding: 6px 12px;
+        margin-bottom: 6px;
+        font-size: 11px;
+    }
+    .gr-form .table-bordered th,
+    .gr-form .table-bordered td {
+        border: 1px solid #ccc;
+    }
+    .gr-form .submit-section {
+        margin-top: 6px;
+    }
+    .gr-form .t-c {
+        font-size: 9px;
+        line-height: 1.3;
+        color: #666;
+    }
+</style>
 
-                            <li class="active">Create GR</li>
-                        </ol>
+<div class="breadcrumbs">
+    <div class="col-sm-4">
+        <div class="page-header float-left">
+            <div class="page-title">
+                <h1>Create GR</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-8">
+        <div class="page-header float-right">
+            <div class="page-title">
+                <ol class="breadcrumb text-right">
+                    <li><a href="{{url('/dash')}}">Dashboard</a></li>
+                    <li><a href="{{url('/gr')}}">GR List</a></li>
+                    <li class="active">Create GR</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content mt-2 gr-form">
+    <div class="animated fadeIn">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong class="card-title">Subject to Rajkot Jurisdiction</strong>
+                            </div>
+                            <div class="col-6">
+                                <strong style="float:right" class="card-title">GST No.: 24AFSPJ7382P1ZI</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="pay-invoice">
+                            <div class="card-body">
+                                <div class="card-title">
+                                    <h3 class="text-center">SAURASHTRA EXPRESS</h3>
+                                    <p style="text-align: center;">H. O. :- 2- Patel Nagar, Bhoja Bhagat Street, 50ft Ring Road, Rajkot. <br>
+                                    Contact No. : 097279 00008, 93750 88088</p>
+                                </div>
+                                <hr>
+                                @if(\Session::has('success'))
+                                <div class="alert alert-success">
+                                    <p>{{\Session::get('success')}}</p>
+                                </div>
+                                @endif
+
+                                @if ($errors->any())
+                                <div class="alert alert-danger">
+                                    <ul>
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                                @endif
+
+                                <form action="{{url('/gr/store')}}" id="gr-form" method="post" novalidate="novalidate">
+                                    @csrf
+                                    <div class="row">
+                                        <div class="col-12 col-lg-4">
+                                            <div class="form-group">
+                                                <label for="from_dest" class="control-label mb-1"><strong>From</strong></label>
+                                                <input type="text" class="form-control" value="{{ $user->office }}" readonly>
+                                                <input type="hidden" name="from_dest" value="{{ $user->office }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-lg-4">
+                                            <div class="form-group">
+                                                <label for="to_dest" class="control-label mb-1"><strong>To</strong></label>
+                                                <select name="to_dest" id="to_dest" class="form-control" required>
+                                                    <option value="">Select Destination</option>
+                                                    @foreach($destinations as $dest)
+                                                        @if($dest !== $user->office)
+                                                            <option value="{{ $dest }}" {{ old('to_dest') == $dest ? 'selected' : '' }}>{{ $dest }}</option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-lg-4">
+                                            <label for="copy_date" class="control-label mb-1"><strong>Date</strong></label>
+                                            <div class="input-group">
+                                                <input name="copy_date" type="text" value="{{$date}}" class="form-control" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:6px">
+                                        <label for="gr_no" class="form-control-label"><strong>GR Number</strong></label>
+                                        <input type="text" id="gr_no" name="gr_no" value="{{ $newGrNo ?? '' }}" class="form-control" readonly>
+                                    </div>
+
+                                    <!-- Consignor Section with Autocomplete -->
+                                    <div class="autocomplete-wrapper">
+                                        <div class="form-group">
+                                            <label for="consignor" class="form-control-label"><strong>Consignor</strong></label>
+                                            <input type="text" id="consignor" name="consignor" placeholder="Start typing to search..." class="form-control" value="{{ old('consignor') }}" autocomplete="off">
+                                            <div id="consignor-dropdown" class="autocomplete-dropdown"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="consignor_address" class="form-control-label"><strong>Consignor Address</strong></label>
+                                        <input type="text" id="consignor_address" name="consignor_address" placeholder="" class="form-control" value="{{ old('consignor_address') }}">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="consignor_gst_no" class="form-control-label"><strong>Consignor GST No.</strong></label>
+                                        <input type="text" id="consignor_gst_no" name="consignor_gst_no" placeholder="" class="form-control" value="{{ old('consignor_gst_no') }}">
+                                    </div>
+
+                                    <!-- Consignee Section with Autocomplete -->
+                                    <div class="autocomplete-wrapper">
+                                        <div class="form-group">
+                                            <label for="consignee" class="form-control-label"><strong>Consignee</strong></label>
+                                            <input type="text" id="consignee" name="consignee" placeholder="Start typing to search..." class="form-control" value="{{ old('consignee') }}" autocomplete="off">
+                                            <div id="consignee-dropdown" class="autocomplete-dropdown"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="consignee_address" class="form-control-label"><strong>Consignee Address</strong></label>
+                                        <input type="text" id="consignee_address" name="consignee_address" placeholder="" class="form-control" value="{{ old('consignee_address') }}">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="consignee_gst_no" class="form-control-label"><strong>Consignee GST No.</strong></label>
+                                        <input type="text" id="consignee_gst_no" name="consignee_gst_no" placeholder="" class="form-control" value="{{ old('consignee_gst_no') }}">
+                                    </div>
+
+                                    <table class="table table-bordered table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <td style="width:8%"><input class="form-control" type="number" name="nugs" value="{{ old('nugs') }}" required placeholder="Nugs"></td>
+                                                <td style="width:10%">
+                                                    <select name="meth" id="meth" class="form-control" required>
+                                                        <option value="">Meth</option>
+                                                        <option value="Bag" {{ old('meth') == 'Bag' ? 'selected' : '' }}>Bag</option>
+                                                        <option value="Box" {{ old('meth') == 'Box' ? 'selected' : '' }}>Box</option>
+                                                        <option value="Bundle" {{ old('meth') == 'Bundle' ? 'selected' : '' }}>Bundle</option>
+                                                        <option value="Drum" {{ old('meth') == 'Drum' ? 'selected' : '' }}>Drum</option>
+                                                        <option value="Roll" {{ old('meth') == 'Roll' ? 'selected' : '' }}>Roll</option>
+                                                        <option value="Carton" {{ old('meth') == 'Carton' ? 'selected' : '' }}>Carton</option>
+                                                        <option value="Loose" {{ old('meth') == 'Loose' ? 'selected' : '' }}>Loose</option>
+                                                        <option value="Other" {{ old('meth') == 'Other' ? 'selected' : '' }}>Other</option>
+                                                    </select>
+                                                </td>
+                                                <td style="width:30%"><textarea name="description" id="description" rows="2" class="form-control" style="height:36px;resize:none" placeholder="Description">{{ old('description') }}</textarea></td>
+                                                <td style="width:10%"><input class="form-control" type="text" name="pm" value="{{ old('pm') }}" placeholder="PM"></td>
+                                                <td style="width:10%"><input class="form-control" type="text" name="weight" value="{{ old('weight') }}" placeholder="Weight"></td>
+                                                <td style="width:8%"><input class="form-control sum" type="number" name="frieght_amount" value="{{ old('frieght_amount') }}" placeholder="Freight"></td>
+                                                <td style="width:6%"><input class="form-control sum" type="number" name="sur_ch" value="{{ old('sur_ch') }}" placeholder="Sur.Ch"></td>
+                                                <td style="width:6%"><input class="form-control sum" type="number" name="c_r" value="{{ old('c_r') }}" placeholder="C/R"></td>
+                                                <td style="width:6%"><input class="form-control sum" type="number" name="other" value="{{ old('other') }}" placeholder="Other"></td>
+                                                <td style="width:6%"><input class="form-control sum" type="number" name="bc_amount" value="{{ old('bc_amount') }}" placeholder="BC"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">
+                                                    Bill: <input class="form-control" type="number" name="bill_amount" value="{{ old('bill_amount') }}" style="width:80px;display:inline" placeholder="0">
+                                                </td>
+                                                <td colspan="2">
+                                                    E-Way: <input type="text" class="form-control" name="eway_bill_number" value="{{ old('eway_bill_number') }}" style="width:120px;display:inline" placeholder="E-Way Bill No.">
+                                                </td>
+                                                <td colspan="2" class="text-center">
+                                                    To Pay: <input id="to_pay_checkbox" type="checkbox" value="1" name="to_pay">
+                                                    &nbsp; Paid: <input id="paid_checkbox" type="checkbox" value="1" name="paid">
+                                                </td>
+                                                <td colspan="2">
+                                                    Total: <input id="totalsum" class="form-control" type="number" name="total_amount" value="{{ old('total_amount') }}" readonly style="background:#eee;width:80px;display:inline" placeholder="0">
+                                                </td>
+                                                <td>{{$user->office}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="10">
+                                                    <small class="t-c">T&C: (1) Not responsible after 6 months. (2) No delivery without Consignee copy. (3) No responsibility for damage/theft in transit. (4) Receipt without date cancelled.</small>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <div>
+                                        <button id="payment-button" type="submit" class="btn btn-success btn-lg btn-block">
+                                            <span id="payment-button-amount">Submit</span>
+                                            <span id="payment-button-sending" style="display:none;">Sending…</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-  
+    </div>
+</div>
 
-  <div class="content mt-3">
-            <div class="animated fadeIn">
+<script>
+// Autocomplete functionality for consignor
+(function() {
+    const consignorInput = document.getElementById('consignor');
+    const consignorDropdown = document.getElementById('consignor-dropdown');
+    const consignorAddress = document.getElementById('consignor_address');
+    const consignorGst = document.getElementById('consignor_gst_no');
 
+    let timeout = null;
 
-                <div class="row">
-                  <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="row">
-                                <div class="col-6" >
-                                    <strong class="card-title">Subject to Rajkot Jurisdiction</strong>
-                                </div>
-                                <div class="col-6" >
-                                    <strong style="float:right" class="card-title">GST No.: 24AFSPJ7382P1ZI</strong>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                          <!-- Credit Card -->
-                          <div id="pay-invoice">
-                              <div class="card-body">
-                                  <div class="card-title">
-                                      <h3 class="text-center">SAURASHTRA EXPRESS</h3>
-                                      <p style="text-align: center;">H. O. :- 2- Patel Nagar, Bhoja Bhagat Street, 50ft Ring Road, Rajkot. <br>
-                                      Contact No. : 097279 00008, 93750 88088</p>
-                                  </div>
-                                  <hr>
-                                    @if(\Session::has('success'))
-                                  <div class="alert alert-success">
-                                    <p>{{\Session::get('success')}}</p>
-                                  </div>
-                                  @endif
-                              
-                                  
-                                  @if ($errors->any())
-                                      <div class="alert alert-danger">
-                                          <ul>
-                                              @foreach ($errors->all() as $error)
-                                                  <li>{{ $error }}</li>
-                                              @endforeach
-                                          </ul>
-                                      </div>
-                                  @endif
-                                   <form action="{{url('/dash/gr/store')}}" id="challanform" method="post" novalidate="novalidate">
-                                    @csrf
-                                        <div class="row">
-                                          <div class="col-12 col-lg-4">
-                                              <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>From</strong></label>
-                                                  <select name="from_dest" id="select"class="form-control" disabled >
-    <option value="Kashmore Gate" {{ $users->office == 'Kashmore Gate' ? 'selected' : '' }}>Kashmore Gate</option>
-    <option value="Rajkot" {{ $users->office == 'Rajkot' ? 'selected' : '' }}>Rajkot</option>
-    <option value="Dayabasti" {{ $users->office == 'Dayabasti' ? 'selected' : '' }}>Dayabasti</option>
-    <option value="Swarup Nagar" {{ $users->office == 'Swarup Nagar'? 'selected' : '' }}>Swarup Nagar</option>
-    <option value="Navagam" {{ $users->office == 'Navagam' ? 'selected' : '' }}>Navagam</option>
-    <option value="Shapar (1)" {{ $users->office == 'Shapar (1)' ? 'selected' : '' }}>Shapar (1)</option>
-    <option value="Shapar (2)" {{ $users->office == 'Shapar (2)' ? 'selected' : '' }}>Shapar (2)</option>
-                                                   </select>
-                                                   <select name="from_dest" hidden="true" id="select"class="form-control"  >
-    <option value="Kashmore Gate" {{ $users->office == 'Kashmore Gate' ? 'selected' : '' }}>Kashmore Gate</option>
-    <option value="Rajkot" {{ $users->office == 'Rajkot' ? 'selected' : '' }}>Rajkot</option>
-    <option value="Dayabasti" {{ $users->office == 'Dayabasti' ? 'selected' : '' }}>Dayabasti</option>
-    <option value="Swarup Nagar" {{ $users->office == 'Swarup Nagar'? 'selected' : '' }}>Swarup Nagar</option>
-    <option value="Navagam" {{ $users->office == 'Navagam' ? 'selected' : '' }}>Navagam</option>
-    <option value="Shapar (1)" {{ $users->office == 'Shapar (1)' ? 'selected' : '' }}>Shapar (1)</option>
-    <option value="Shapar (2)" {{ $users->office == 'Shapar (2)' ? 'selected' : '' }}>Shapar (2)</option>
-                                                   </select>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                          </div>
-                                          <div class="col-12 col-lg-4">
-                                              <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>To</strong></label>
-                                                  <select name="to_dest" id="select" class="form-control">
-                                                     <option value="Kashmore Gate  ">Kashmore Gate </option>
-                                                    <option value="Dayabasti">Dayabasti</option>
-                                                    <option value="Swarup Nagar">Swarup Nagar</option>
-                                                    <option value="Navagam">Navagam</option>
-                                                    <option value="Shapar (1)">Shapar (1)</option>
-                                                    <option value="Shapar (2)">Shapar (2)</option>
-                                                  
-                                                   </select>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                          </div>
-                                          <div class="col-12 col-lg-4">
-                                              <label for="x_card_code" class="control-label mb-1"><strong>Date</strong></label>
-                                              <div class="input-group">
+    consignorInput.addEventListener('input', function() {
+        const q = this.value.trim();
+        clearTimeout(timeout);
 
-                                                  <input name="copy_date" type="text" value="{{$date}}" class="form-control cc-name valid" readonly>
-                                                  </div>
-                                              </div>
-                                          </div>
-                                           <div class="form-group"><label for="company" class=" form-control-label">GR Number</label><input type="text" id="company" name='gr_no'placeholder="" value="{{$new_id}}"class="form-control"readonly></div>
+        if (q.length < 3) {
+            consignorDropdown.classList.remove('show');
+            return;
+        }
 
-                                      <div class="form-group"><label for="company" name='consignor'class=" form-control-label"><strong>Consignor</strong></label><input type="text" id="company" placeholder="" name="consignor"class="form-control"></div> 
+        timeout = setTimeout(function() {
+            fetch('/dash/gr/autocomplete/consignor?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    consignorDropdown.innerHTML = '';
+                    if (data.length === 0) {
+                        consignorDropdown.classList.remove('show');
+                        return;
+                    }
+                    data.forEach(function(item) {
+                        const div = document.createElement('div');
+                        div.className = 'autocomplete-item';
+                        div.innerHTML = '<div class="name">' + item.name + '</div><div class="details">' + (item.address || '') + ' ' + (item.gst_no || '') + '</div>';
+                        div.addEventListener('click', function() {
+                            consignorInput.value = item.name;
+                            consignorAddress.value = item.address || '';
+                            consignorGst.value = item.gst_no || '';
+                            consignorDropdown.classList.remove('show');
+                        });
+                        consignorDropdown.appendChild(div);
+                    });
+                    consignorDropdown.classList.add('show');
+                });
+        }, 300);
+    });
 
-                                     <div class="form-group"><label for="company" name="" class=" form-control-label"><strong>Address</strong></label><input type="text" id="company" name="nor_adress"placeholder="" class="form-control"></div>
+    document.addEventListener('click', function(e) {
+        if (!consignorInput.contains(e.target) && !consignorDropdown.contains(e.target)) {
+            consignorDropdown.classList.remove('show');
+        }
+    });
+})();
 
-                                     
-                                     <div class="form-group"><label for="company" class=" form-control-label"><strong>GST No.</strong></label><input type="text" id="company"name="nor_gst_no" placeholder="" class="form-control"></div>
+// Autocomplete functionality for consignee
+(function() {
+    const consigneeInput = document.getElementById('consignee');
+    const consigneeDropdown = document.getElementById('consignee-dropdown');
+    const consigneeAddress = document.getElementById('consignee_address');
+    const consigneeGst = document.getElementById('consignee_gst_no');
 
-                                     <div class="form-group"><label for="company" class=" form-control-label"><strong>Consignee</strong></label><input type="text" id="company" name="consignee" placeholder="" class="form-control"></div>
+    let timeout = null;
 
-                                     <div class="form-group"><label for="company" class=" form-control-label"><strong>Address</strong></label><input type="text" id="company" placeholder=""name="nee_adress" class="form-control"></div>
+    consigneeInput.addEventListener('input', function() {
+        const q = this.value.trim();
+        clearTimeout(timeout);
 
-                                     <div class="form-group"><label for="company" class=" form-control-label"><strong>GST No.</strong></label><input type="text" id="company" name="nee_gst_no"placeholder="" class="form-control"></div>
-                                       
-                                      <table class="table table-bordered">
-                                        <tdead>
-                                            <tr>
-                                                <th scope="col"style="width: 10%">Nugs</th>
-                                                <th scope="col"style="width: 12%">Meth.</th>
-                                                <th scope="col" style="width: 52%" colspan="3">Description of  Goods (As Per Iteam)</th>
-                                                <th scope="col">Charge</th>
-                                                <th scope="col"  style="width: 20%">Amount Rs.</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                             <tr>
-                                                <td scope="row" rowspan="5">
-                                                    <input  class="form-control" s type="number" name="nugs">
-                                                </td>
-                                                <td scope="row" rowspan="5">
-                                                   <select name="meth" id="select" class="form-control">
-                                                   <option value="C_R" >C_R</option>
-                                                    <option value="C_B">C_B</option>
-                                                    <option value="Bags" >Bags</option>
-                                                   
-                                                  </select>
-   
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td scope="row" colspan="3" rowspan="4"><textarea name="description" id="textarea-input" value="" rows="9" placeholder="Description" class="form-control"></textarea></td></td>
-                                                <th>Freigt</th>
-                                                <td><input class="form-control sum"  s type="number" name="frieght_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Sur. Ch.</th>
-                                                <td> <input id='s' class="form-control sum"  s type="number" value="" name="sur_ch"></td>
-                                                
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">C/R.</th>
-                                                <td><input class="form-control sum" s type="number" name="c_r"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Other</th>
-                                                <td><input  class="form-control sum" type="number" name="other"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row" colspan="2">Bill Amount : <input class="form-control" type="number" name="bill_amount"></th>
-                                                <th scope="row" colspan="3">E-Way Bill No : <input type="text" class="form-control" name="eway_bill_number"></th>
-                                                <th scope="row">BC</th>
-                                                <td><input class="form-control sum" class="form-control"  s type="number"  name="bc_amount"></td>
-                                                
-                                            </tr>
-                                            <tr>
-                                               <th colspan="2">PM :<input class="form-control"  type="text" name="pm"></th>
-                                               <th>Weight :<input class="form-control"  type="text" name="weight"></th>
-                                               <th><label>To Pay:</label> <input class="form-control abc" value="1" type="checkbox" name="to_pay" default ></th>
-                                               <th><label>Paid : </label><input  class="form-control abc"  type="checkbox" value="1" name="paid" default></th>
-                                               <th scope="row">Total</th>
-                                                <td><input  id="totalsum"class="form-control" type="number" name="total_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <th colspan="5" rowspan="2">
-                                                    Termes & Conditions :
-                                                    <p>
-                                                        (1) We are not responsible of goods after 6 months of booking date. (2) Goods will not be Deliver without Consignee copy. (3) We are not responsible for damage, shortage or theft in transit. (4) The receipt without date will be cancelled. 
-                                                    </p>
-                                                </th>
-                                                <th colspan="2" rowspan="2"> {{$users->office}} Office Sign</th>
-                                            </tr>
-                                        </tbody>
-                                        </table>
-                                      </div>
-                                       <div>
-                                          <button id="payment-button" type="submit" class="btn btn-success btn-lg btn-block">
-                                            
-                                              <span id="payment-button-amount">submit</span>
-                                              <span id="payment-button-sending" style="display:none;">Sending…</span>
-                                          </button>
-                                      </div>
-                                      </div>
-                                  </form>
-                              </div>
-                          </div>
+        if (q.length < 3) {
+            consigneeDropdown.classList.remove('show');
+            return;
+        }
 
-                        </div>
-                    </div> <!-- .card -->
+        timeout = setTimeout(function() {
+            fetch('/dash/gr/autocomplete/consignee?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    consigneeDropdown.innerHTML = '';
+                    if (data.length === 0) {
+                        consigneeDropdown.classList.remove('show');
+                        return;
+                    }
+                    data.forEach(function(item) {
+                        const div = document.createElement('div');
+                        div.className = 'autocomplete-item';
+                        div.innerHTML = '<div class="name">' + item.name + '</div><div class="details">' + (item.address || '') + ' ' + (item.gst_no || '') + '</div>';
+                        div.addEventListener('click', function() {
+                            consigneeInput.value = item.name;
+                            consigneeAddress.value = item.address || '';
+                            consigneeGst.value = item.gst_no || '';
+                            consigneeDropdown.classList.remove('show');
+                        });
+                        consigneeDropdown.appendChild(div);
+                    });
+                    consigneeDropdown.classList.add('show');
+                });
+        }, 300);
+    });
 
-            </div><!-- .animated -->
-     
-        @endsection
+    document.addEventListener('click', function(e) {
+        if (!consigneeInput.contains(e.target) && !consigneeDropdown.contains(e.target)) {
+            consigneeDropdown.classList.remove('show');
+        }
+    });
+})();
 
+// Auto-calculate total
+(function() {
+    function calculateTotal() {
+        let total = 0;
+        document.querySelectorAll('.sum').forEach(function(input) {
+            total += parseFloat(input.value) || 0;
+        });
+        document.getElementById('totalsum').value = total.toFixed(2);
+    }
+
+    document.querySelectorAll('.sum').forEach(function(input) {
+        input.addEventListener('input', calculateTotal);
+    });
+})();
+
+// Paid / To-Pay mutual exclusivity
+(function() {
+    const paidCb = document.getElementById('paid_checkbox');
+    const toPayCb = document.getElementById('to_pay_checkbox');
+
+    function mutualExclusivity() {
+        if (this === paidCb && this.checked) {
+            toPayCb.checked = false;
+        } else if (this === toPayCb && this.checked) {
+            paidCb.checked = false;
+        }
+    }
+
+    paidCb.addEventListener('change', mutualExclusivity);
+    toPayCb.addEventListener('change', mutualExclusivity);
+})();
+
+// Route rate autofill (per LOGIC_SKILL section 11)
+(function() {
+    const fromDest = document.getElementById('from_dest');
+    const toDest = document.getElementById('to_dest');
+    const freightInput = document.getElementById('frieght_amount');
+    const weightInput = document.querySelector('input[name="weight"]');
+
+    if (!fromDest || !toDest || !freightInput) return;
+
+    let routeTimeout = null;
+
+    function fetchRouteRate() {
+        const from = fromDest.value;
+        const to = toDest.value;
+        const weight = parseFloat(weightInput?.value) || 0;
+
+        // Skip if either is not set or they are the same
+        if (!from || !to || from === to) return;
+
+        clearTimeout(routeTimeout);
+        routeTimeout = setTimeout(function() {
+            fetch('/route-rate?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.rate_per_kg && weight > 0) {
+                        const suggestedFreight = (weight * parseFloat(data.rate_per_kg)).toFixed(2);
+                        freightInput.value = suggestedFreight;
+                        // Recalculate total
+                        calculateTotal();
+                    }
+                })
+                .catch(function() {
+                    // Silently fail - route not found is ok
+                });
+        }, 500);
+    }
+
+    // Listen for to_dest changes and weight changes
+    if (toDest) {
+        toDest.addEventListener('change', fetchRouteRate);
+    }
+    if (weightInput) {
+        weightInput.addEventListener('input', fetchRouteRate);
+    }
+})();
+
+// Form submission guard
+(function() {
+    var form = document.getElementById('gr-form');
+    var btn = document.getElementById('payment-button');
+    var submitted = false;
+
+    form.addEventListener('submit', function(e) {
+        if (submitted) {
+            e.preventDefault();
+            return false;
+        }
+        submitted = true;
+        btn.disabled = true;
+        btn.innerHTML = '<span>Submitting...</span>';
+        return true;
+    });
+})();
+</script>
+
+@endsection

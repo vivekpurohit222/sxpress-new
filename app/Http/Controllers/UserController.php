@@ -3,145 +3,306 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
-
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
-use Auth;
-
-//Importing laravel-permission models
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 
-//Enables us to output flash messaging
-use Session;
-
-class UserController extends Controller {
-
-    public function __construct() {
-        $this->middleware(['auth', 'isAdmin']); //isAdmin middleware lets only users with a //specific permission permission to access these resources
+class UserController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');
     }
 
-    /**
-    * Display a listing of the resource.
-    *
-    * @return \Illuminate\Http\Response
-    */
-    public function index() {
-    //Get all users and pass it to the view
-        $users = User::all(); 
-        return view('users.index')->with('users', $users);
-    }
+    // ─────────────────────────────────────────────────────────────────────
+    // INDEX
+    // ─────────────────────────────────────────────────────────────────────
 
-    /**
-    * Show the form for creating a new resource.
-    *
-    * @return \Illuminate\Http\Response
-    */
-    public function create() {
-    //Get all roles and pass it to the view
-        $roles = Role::get();
-        return view('users.create', ['roles'=>$roles]);
-    }
+    public function index(Request $request)
+    {
+        $query = User::with('roles'); // eager-load roles (fix N+1)
 
-    /**
-    * Store a newly created resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @return \Illuminate\Http\Response
-    */
-    public function store(Request $request) {
-    //Validate name, email and password fields
-        $this->validate($request, [
-            'name'=>'required|max:120',
-            'email'=>'required|email|unique:users',
-            'password'=>'required|min:6|confirmed'
-        ]);
-
-        $user = User::create($request->only('email', 'name', 'password','office')); //Retrieving only the email and password data
-
-        $roles = $request['roles']; //Retrieving the roles field
-    //Checking if a role was selected
-        if (isset($roles)) {
-
-            foreach ($roles as $role) {
-            $role_r = Role::where('id', '=', $role)->firstOrFail();            
-            $user->assignRole($role_r); //Assigning role to user
-            }
-        }        
-    //Redirect to the users.index view and display message
-        return redirect()->route('users.index')
-            ->with('flash_message',
-             'User successfully added.');
-    }
-
-    /**
-    * Display the specified resource.
-    *
-    * @param  int  $id
-    * @return \Illuminate\Http\Response
-    */
-    public function show($id) {
-        return redirect('users'); 
-    }
-
-    /**
-    * Show the form for editing the specified resource.
-    *
-    * @param  int  $id
-    * @return \Illuminate\Http\Response
-    */
-    public function edit($id) {
-        $user = User::findOrFail($id); //Get user with specified id
-        $roles = Role::get(); //Get all roles
-
-        return view('users.edit', compact('user', 'roles')); //pass user and roles data to view
-
-    }
-
-    /**
-    * Update the specified resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @param  int  $id
-    * @return \Illuminate\Http\Response
-    */
-    public function update(Request $request, $id) {
-        $user = User::findOrFail($id); //Get role specified by id
-
-    //Validate name, email and password fields    
-        $this->validate($request, [
-            'name'=>'required|max:120',
-            'email'=>'required|email|unique:users,email,'.$id,
-            'password'=>'required|min:6|confirmed'
-        ]);
-        $input = $request->only(['name', 'email', 'password','office']); //Retreive the name, email and password fields
-        $roles = $request['roles']; //Retreive all roles
-        $user->fill($input)->save();
-
-        if (isset($roles)) {        
-            $user->roles()->sync($roles);  //If one or more role is selected associate user to roles          
-        }        
-        else {
-            $user->roles()->detach(); //If no role is selected remove exisiting role associated to a user
+        // Data isolation: Admin sees only own branch (per skill §2/§14)
+        if (!Auth::user()->hasRole('SuperAdmin')) {
+            $query->where('office', Auth::user()->office);
         }
-        return redirect()->route('users.index')
-            ->with('flash_message',
-             'User successfully edited.');
+
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        // Office filter (SuperAdmin only)
+        if ($request->filled('office') && Auth::user()->hasRole('SuperAdmin')) {
+            $query->where('office', $request->office);
+        }
+
+        // Status filter
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->paginate(15);
+        $users->appends($request->query());
+
+        $offices = Auth::user()->hasRole('SuperAdmin')
+            ? DB::table('branches')->pluck('name')
+            : collect([Auth::user()->office]);
+
+        return view('users.index', compact('users', 'offices'));
     }
 
-    /**
-    * Remove the specified resource from storage.
-    *
-    * @param  int  $id
-    * @return \Illuminate\Http\Response
-    */
-    public function destroy($id) {
-    //Find a user with a given id and delete
-        $user = User::findOrFail($id); 
-        $user->delete();
+    // ─────────────────────────────────────────────────────────────────────
+    // CREATE
+    // ─────────────────────────────────────────────────────────────────────
+
+    public function create()
+    {
+        $roles = $this->assignableRoles();
+        $offices = $this->availableOffices();
+        return view('users.create', compact('roles', 'offices'));
+    }
+
+    public function store(Request $request)
+    {
+        $this->validate($request, [
+            'name' => 'required|string|max:120',
+            'email' => 'required|email|max:255|unique:users',
+            'password' => [
+                'required', 'string', 'min:8', 'confirmed',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+            ],
+            'office' => 'required|string|exists:branches,name',
+            'phone' => 'nullable|string|max:15',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'exists:roles,id',
+            'is_active' => 'nullable|boolean',
+        ], [
+            'password.regex' => 'Password must contain at least one uppercase letter and one number.',
+        ]);
+
+        // Admin can only create for own branch (per skill §14)
+        if (!Auth::user()->hasRole('SuperAdmin') && $request->office !== Auth::user()->office) {
+            abort(403, 'You can only create users for your own office.');
+        }
+
+        // Validate role assignment restrictions
+        $this->validateRoleAssignment($request->roles);
+
+        // Resolve branch_id from office name
+        $branchId = DB::table('branches')->where('name', $request->office)->value('id');
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => $request->password, // hashed cast handles bcrypt
+            'office' => $request->office,
+            'phone' => $request->phone,
+            'branch_id' => $branchId,
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        foreach ($request->roles as $roleId) {
+            $role = Role::findOrFail($roleId);
+            $user->assignRole($role);
+        }
 
         return redirect()->route('users.index')
-            ->with('flash_message',
-             'User successfully deleted.');
+            ->with('flash_message', "User {$user->name} created successfully.");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // SHOW (redirects to index)
+    // ─────────────────────────────────────────────────────────────────────
+
+    public function show($id)
+    {
+        return redirect()->route('users.index');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // EDIT
+    // ─────────────────────────────────────────────────────────────────────
+
+    public function edit($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Admin can only edit own-branch users
+        if (!Auth::user()->hasRole('SuperAdmin') && $user->office !== Auth::user()->office) {
+            abort(403, 'You can only edit users in your own office.');
+        }
+
+        $roles = $this->assignableRoles();
+        $offices = $this->availableOffices();
+        return view('users.edit', compact('user', 'roles', 'offices'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        // Admin can only edit own-branch users
+        if (!Auth::user()->hasRole('SuperAdmin') && $user->office !== Auth::user()->office) {
+            abort(403, 'You can only edit users in your own office.');
+        }
+
+        $this->validate($request, [
+            'name' => 'required|string|max:120',
+            'email' => 'required|email|max:255|unique:users,email,' . $id,
+            'password' => [
+                'nullable', 'string', 'min:8', 'confirmed',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+            ],
+            'office' => 'required|string|exists:branches,name',
+            'phone' => 'nullable|string|max:15',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'exists:roles,id',
+            'is_active' => 'nullable|boolean',
+        ], [
+            'password.regex' => 'Password must contain at least one uppercase letter and one number.',
+        ]);
+
+        // Admin cannot move user to another branch
+        if (!Auth::user()->hasRole('SuperAdmin') && $request->office !== Auth::user()->office) {
+            abort(403, 'You cannot transfer users to another office.');
+        }
+
+        // Validate role assignment restrictions
+        $this->validateRoleAssignment($request->roles);
+
+        // Resolve branch_id from office name
+        $branchId = DB::table('branches')->where('name', $request->office)->value('id');
+
+        $input = [
+            'name' => $request->name,
+            'email' => $request->email,
+            'office' => $request->office,
+            'phone' => $request->phone,
+            'branch_id' => $branchId,
+            'is_active' => $request->boolean('is_active', $user->is_active),
+        ];
+
+        if ($request->filled('password')) {
+            $input['password'] = $request->password;
+        }
+
+        $user->fill($input)->save();
+        $user->roles()->sync($request->roles);
+
+        return redirect()->route('users.index')
+            ->with('flash_message', "User {$user->name} updated successfully.");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // TOGGLE ACTIVE (Deactivate / Reactivate)
+    // ─────────────────────────────────────────────────────────────────────
+
+    public function toggleActive($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Admin can only toggle own-branch users
+        if (!Auth::user()->hasRole('SuperAdmin') && $user->office !== Auth::user()->office) {
+            abort(403);
+        }
+
+        // Cannot deactivate yourself
+        if ($user->id === Auth::id()) {
+            return back()->withErrors(['Cannot deactivate your own account.']);
+        }
+
+        // Cannot deactivate a SuperAdmin unless you are SuperAdmin
+        if ($user->hasRole('SuperAdmin') && !Auth::user()->hasRole('SuperAdmin')) {
+            abort(403, 'Cannot deactivate a SuperAdmin user.');
+        }
+
+        $user->update(['is_active' => !$user->is_active]);
+        $status = $user->is_active ? 'activated' : 'deactivated';
+
+        return back()->with('flash_message', "User {$user->name} has been {$status}.");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // DELETE (soft-delete)
+    // ─────────────────────────────────────────────────────────────────────
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Cannot delete yourself
+        if ($user->id === Auth::id()) {
+            return back()->withErrors(['Cannot delete your own account.']);
+        }
+
+        // Admin can only delete own-branch users
+        if (!Auth::user()->hasRole('SuperAdmin') && $user->office !== Auth::user()->office) {
+            abort(403);
+        }
+
+        // Cannot delete a SuperAdmin unless you are SuperAdmin
+        if ($user->hasRole('SuperAdmin') && !Auth::user()->hasRole('SuperAdmin')) {
+            abort(403, 'Cannot delete a SuperAdmin user.');
+        }
+
+        // Prevent deleting the last SuperAdmin
+        if ($user->hasRole('SuperAdmin')) {
+            $superAdminCount = User::role('SuperAdmin')->where('is_active', true)->count();
+            if ($superAdminCount <= 1) {
+                return back()->withErrors(['Cannot delete the only active SuperAdmin. Promote another user first.']);
+            }
+        }
+
+        $user->delete(); // soft-delete (model uses SoftDeletes)
+
+        return redirect()->route('users.index')
+            ->with('flash_message', "User {$user->name} has been removed.");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────────
+
+    private function assignableRoles()
+    {
+        if (Auth::user()->hasRole('SuperAdmin')) {
+            return Role::orderBy('name')->get();
+        }
+        return Role::whereNotIn('name', ['SuperAdmin', 'Admin'])->orderBy('name')->get();
+    }
+
+    private function availableOffices()
+    {
+        if (Auth::user()->hasRole('SuperAdmin')) {
+            return DB::table('branches')->orderBy('name')->pluck('name');
+        }
+        return collect([Auth::user()->office]);
+    }
+
+    private function validateRoleAssignment(array $roleIds): void
+    {
+        if (Auth::user()->hasRole('SuperAdmin')) {
+            return;
+        }
+
+        $restricted = Role::whereIn('name', ['SuperAdmin', 'Admin'])->pluck('id')->all();
+        foreach ($roleIds as $roleId) {
+            if (in_array((int) $roleId, $restricted)) {
+                abort(403, 'You cannot assign SuperAdmin or Admin roles. Contact SuperAdmin.');
+            }
+        }
     }
 }

@@ -93,7 +93,7 @@
                                   @endif -->
                         <div class="card-header">
                             <strong class="card-title">Available Permissions</strong>
-                            <a href="{{URL::to('dash/permissions/create')}}" class="btn btn-primary pull-right">Add Permission</a>
+                            <a href="{{URL::to('permissions/create')}}" class="btn btn-primary pull-right">Add Permission</a>
                         </div>
                         <div class="card-body">
                   <table id="bootstrap-data-table" class="table table-striped table-bordered">
@@ -113,7 +113,7 @@
                       <tr>
                         <td>{{ $permission->name }}</td> 
                     <td>
-                    <a href="{{ URL::to('dash/permissions/'.$permission->id.'/edit') }}" class="btn btn-info pull-left" style="margin-right: 3px;">Edit</a>
+                    <a href="{{ URL::to('permissions/'.$permission->id.'/edit') }}" class="btn btn-info pull-left" style="margin-right: 3px;">Edit</a>
 
                     {!! Form::open(['method' => 'DELETE', 'route' => ['permissions.destroy', $permission->id] ]) !!}
                     {!! Form::submit('Delete', ['class' => 'btn btn-danger']) !!}

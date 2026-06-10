@@ -1,279 +1,401 @@
 @extends('admin.layout.master')
 @section('content')
-<head><link rel="stylesheet" href="{{asset('public/admin/css/copies.css')}}">
- </head>
-      <div class="breadcrumbs">
-            <div class="col-sm-4">
-                <div class="page-header float-left">
-                    <div class="page-title">
-                        <h1>Copy Edit</h1>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-8">
-                <div class="page-header float-right">
-                    <div class="page-title">
-                        <ol class="breadcrumb text-right">
-                            <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                            <li><a href="{{url('/dash/gr')}}">Copy List Table</a></li>
 
-                            <li class="active">Copy Edit</li>
-                        </ol>
+<style>
+    .gr-form {
+        font-size: 12px;
+    }
+    .gr-form .form-group {
+        margin-bottom: 6px;
+    }
+    .gr-form label {
+        margin-bottom: 1px;
+        font-size: 11px;
+    }
+    .gr-form .form-control {
+        padding: 3px 6px;
+        font-size: 12px;
+        height: 28px;
+    }
+    .gr-form textarea.form-control {
+        height: 52px;
+        resize: none;
+    }
+    .gr-form table {
+        font-size: 11px;
+        margin-bottom: 6px;
+    }
+    .gr-form table th,
+    .gr-form table td {
+        padding: 3px 5px;
+        vertical-align: middle;
+    }
+    .gr-form table .form-control {
+        height: 24px;
+        padding: 2px 4px;
+        font-size: 11px;
+    }
+    .gr-form .btn {
+        padding: 5px 20px;
+        font-size: 12px;
+    }
+    .gr-form .card {
+        margin-bottom: 0;
+    }
+    .gr-form .card-body {
+        padding: 6px 12px;
+    }
+    .gr-form .card-header {
+        padding: 6px 15px;
+    }
+    .gr-form .card-title h3 {
+        font-size: 14px;
+        margin: 0;
+    }
+    .gr-form .card-title p {
+        font-size: 10px;
+        margin: 1px 0 0;
+    }
+    .gr-form hr {
+        margin: 6px 0;
+    }
+    .gr-form .page-title h1 {
+        font-size: 18px;
+    }
+    .gr-form .page-title {
+        line-height: 1.2;
+    }
+    .gr-form .content {
+        margin-top: 0.5rem;
+    }
+    .gr-form .breadcrumbs {
+        padding: 0.4rem 0;
+        margin-bottom: 0;
+    }
+    .gr-form .alert {
+        padding: 6px 12px;
+        margin-bottom: 6px;
+        font-size: 11px;
+    }
+    .gr-form .table-bordered th,
+    .gr-form .table-bordered td {
+        border: 1px solid #ccc;
+    }
+    .gr-form .submit-section {
+        margin-top: 6px;
+    }
+    .gr-form .t-c {
+        font-size: 9px;
+        line-height: 1.3;
+        color: #666;
+    }
+    body {
+        overflow-x: hidden;
+    }
+</style>
+
+<div class="breadcrumbs">
+    <div class="col-sm-4">
+        <div class="page-header float-left">
+            <div class="page-title">
+                <h1>GR Edit</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-8">
+        <div class="page-header float-right">
+            <div class="page-title">
+                <ol class="breadcrumb text-right">
+                    <li><a href="{{url('/dash')}}">Dashboard</a></li>
+                    <li><a href="{{url('/gr')}}">GR List</a></li>
+                    <li class="active">GR Edit</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content mt-2 gr-form">
+    <div class="animated fadeIn">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong class="card-title">Subject to Rajkot Jurisdiction</strong>
+                            </div>
+                            <div class="col-6">
+                                <strong style="float:right" class="card-title">GST No.: 24AFSPJ7382P1ZI</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="pay-invoice">
+                            <div class="card-body">
+                                <div class="card-title">
+                                    <h3 class="text-center">SAURASHTRA EXPRESS</h3>
+                                    <p style="text-align: center;">H. O. :- 2- Patel Nagar, Bhoja Bhagat Street, 50ft Ring Road, Rajkot. <br>
+                                    Contact No. : 097279 00008, 93750 88088</p>
+                                </div>
+                                <hr>
+                                @if(\Session::has('success'))
+                                <div class="alert alert-success">
+                                    <p>{{\Session::get('success')}}</p>
+                                </div>
+                                @endif
+
+                                @if ($errors->any())
+                                <div class="alert alert-danger">
+                                    <ul>
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                                @endif
+
+                                <form action="{{url('/gr/'.$id.'/update')}}" method="post" novalidate="novalidate">
+                                    {{csrf_field()}}
+                                    <input type="hidden" name="_method" value="PATCH"/>
+                                    <div class="row">
+                                        <div class="col-12 col-lg-4">
+                                            <div class="form-group">
+                                                <label class="control-label mb-1"><strong>From</strong></label>
+                                                <input type="text" class="form-control" value="{{ $gr->from_dest }}" readonly>
+                                                <input type="hidden" name="from_dest" value="{{ $gr->from_dest }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-lg-4">
+                                            <div class="form-group">
+                                                <label class="control-label mb-1"><strong>To</strong></label>
+                                                <select name="to_dest" class="form-control">
+                                                    <option value="">Select Destination</option>
+                                                    @foreach($destinations as $dest)
+                                                        @if($dest !== $gr->from_dest)
+                                                            <option value="{{ $dest }}" {{ $gr->to_dest == $dest ? 'selected' : '' }}>{{ $dest }}</option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-lg-4">
+                                            <label class="control-label mb-1"><strong>Date</strong></label>
+                                            <div class="input-group">
+                                                <input name="copy_date" value="{{$gr->copy_date}}" type="text" class="form-control" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:6px">
+                                        <label class="form-control-label"><strong>GR Number</strong></label>
+                                        <input type="text" name="gr_no" value="{{$gr->gr_no}}" class="form-control" readonly>
+                                    </div>
+
+                                    <div class="row" style="margin-bottom:6px">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="form-control-label"><strong>Consignor</strong></label>
+                                                <input type="text" value="{{$gr->consignor}}" name="consignor" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="form-control-label"><strong>Address</strong></label>
+                                                <input type="text" value="{{$gr->consignor_address}}" name="consignor_address" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group">
+                                                <label class="form-control-label"><strong>GST No.</strong></label>
+                                                <input type="text" value="{{$gr->consignor_gst_no}}" name="consignor_gst_no" class="form-control">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row" style="margin-bottom:6px">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="form-control-label"><strong>Consignee</strong></label>
+                                                <input type="text" value="{{$gr->consignee}}" name="consignee" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="form-control-label"><strong>Address</strong></label>
+                                                <input type="text" value="{{$gr->consignee_address}}" name="consignee_address" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group">
+                                                <label class="form-control-label"><strong>GST No.</strong></label>
+                                                <input type="text" value="{{$gr->consignee_gst_no}}" name="consignee_gst_no" class="form-control">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <table class="table table-bordered table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <td style="width:8%"><input class="form-control" type="number" name="nugs" value="{{$gr->nugs}}" required></td>
+                                                <td style="width:10%">
+                                                    <select name="meth" class="form-control" required>
+                                                        <option value="">Meth</option>
+                                                        <option value="Bag" {{ $gr->meth == 'Bag' ? 'selected' : '' }}>Bag</option>
+                                                        <option value="Box" {{ $gr->meth == 'Box' ? 'selected' : '' }}>Box</option>
+                                                        <option value="Bundle" {{ $gr->meth == 'Bundle' ? 'selected' : '' }}>Bundle</option>
+                                                        <option value="Drum" {{ $gr->meth == 'Drum' ? 'selected' : '' }}>Drum</option>
+                                                        <option value="Roll" {{ $gr->meth == 'Roll' ? 'selected' : '' }}>Roll</option>
+                                                        <option value="Carton" {{ $gr->meth == 'Carton' ? 'selected' : '' }}>Carton</option>
+                                                        <option value="Loose" {{ $gr->meth == 'Loose' ? 'selected' : '' }}>Loose</option>
+                                                        <option value="Other" {{ $gr->meth == 'Other' ? 'selected' : '' }}>Other</option>
+                                                    </select>
+                                                </td>
+                                                <td style="width:30%"><textarea name="description" rows="2" class="form-control" style="height:36px;resize:none">{{$gr->description}}</textarea></td>
+                                                <td style="width:10%"><input class="form-control" type="text" name="pm" value="{{ $gr->pm }}"></td>
+                                                <td style="width:10%"><input class="form-control" type="text" name="weight" value="{{ $gr->weight }}"></td>
+                                                <td style="width:8%"><input class="form-control sum" type="number" name="frieght_amount" value="{{$gr->frieght_amount}}"></td>
+                                                <td style="width:6%"><input class="form-control sum" type="number" name="sur_ch" value="{{$gr->sur_ch}}"></td>
+                                                <td style="width:6%"><input class="form-control sum" type="number" name="c_r" value="{{$gr->c_r}}"></td>
+                                                <td style="width:6%"><input class="form-control sum" type="number" name="other" value="{{$gr->other}}"></td>
+                                                <td style="width:6%"><input class="form-control sum" type="number" name="bc_amount" value="{{$gr->bc_amount}}"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">
+                                                    Bill: <input class="form-control" type="number" name="bill_amount" value="{{$gr->bill_amount}}" style="width:80px;display:inline">
+                                                </td>
+                                                <td colspan="2">
+                                                    E-Way: <input type="text" class="form-control" name="eway_bill_number" value="{{$gr->eway_bill_number}}" style="width:120px;display:inline">
+                                                </td>
+                                                <td colspan="2" class="text-center">
+                                                    To Pay: <input type="checkbox" value="1" name="to_pay" {{$gr->to_pay == 1 ? 'checked' : ''}}>
+                                                    &nbsp; Paid: <input type="checkbox" value="1" name="paid" {{$gr->paid == 1 ? 'checked' : ''}}>
+                                                </td>
+                                                <td colspan="2">
+                                                    Total: <input id="totalsum" class="form-control" type="number" name="total_amount" value="{{$gr->total_amount}}" readonly style="background:#eee;width:80px;display:inline">
+                                                </td>
+                                                <td>{{$gr->from_dest}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="10">
+                                                    <small class="t-c">T&C: (1) Not responsible after 6 months. (2) No delivery without Consignee copy. (3) No responsibility for damage/theft in transit. (4) Receipt without date cancelled.</small>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <div class="submit-section">
+                                        <button id="payment-button" type="submit" class="btn btn-success btn-lg btn-block">
+                                            <span id="payment-button-amount">Update GR</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- POD Section -->
+                    <div class="card mt-2">
+                        <div class="card-header" style="padding:6px 15px">
+                            <strong class="card-title" style="font-size:13px">Delivery Status & POD</strong>
+                        </div>
+                        <div class="card-body" style="padding:8px 12px">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm mb-0" style="font-size:11px">
+                                        <tr>
+                                            <th>Status:</th>
+                                            <td>
+                                                @php
+                                                    $editStatus = $gr->status ?? 'created';
+                                                    $editStatusClass = match($editStatus) {
+                                                        'created'    => 'bg-secondary',
+                                                        'dispatched' => 'bg-primary',
+                                                        'in_transit' => 'bg-warning text-dark',
+                                                        'delivered'  => 'bg-info',
+                                                        'closed'     => 'bg-success',
+                                                        'cancelled'  => 'bg-danger',
+                                                        default      => 'bg-light text-dark',
+                                                    };
+                                                    $editStatusLabel = match($editStatus) {
+                                                        'created'    => 'Created',
+                                                        'dispatched' => 'Dispatched',
+                                                        'in_transit' => 'In Transit',
+                                                        'delivered'  => 'Delivered',
+                                                        'closed'     => 'Closed',
+                                                        'cancelled'  => 'Cancelled',
+                                                        default      => ucfirst($editStatus),
+                                                    };
+                                                @endphp
+                                                <span class="badge {{ $editStatusClass }}">{{ $editStatusLabel }}</span>
+                                            </td>
+                                        </tr>
+                                        @if($gr->delivered_at)
+                                        <tr>
+                                            <th>Delivered At:</th>
+                                            <td>{{ \Carbon\Carbon::parse($gr->delivered_at)->format('d M Y H:i') }}</td>
+                                        </tr>
+                                        @endif
+                                        @if($gr->pod_file)
+                                        <tr>
+                                            <th>POD:</th>
+                                            <td><a href="{{ Storage::url($gr->pod_file) }}" target="_blank" class="btn btn-sm btn-info">View POD</a></td>
+                                        </tr>
+                                        @endif
+                                    </table>
+                                </div>
+                                <div class="col-md-6 text-right">
+                                    <select name="delivery_status" id="delivery_status" class="form-control" style="width:auto;display:inline" onchange="updateDeliveryStatus({{ $gr->id }}, this.value)">
+                                        <option value="created" {{ ($gr->status ?? '') == 'created' ? 'selected' : '' }}>Created</option>
+                                        <option value="dispatched" {{ ($gr->status ?? '') == 'dispatched' ? 'selected' : '' }}>Dispatched</option>
+                                        <option value="in_transit" {{ ($gr->status ?? '') == 'in_transit' ? 'selected' : '' }}>In Transit</option>
+                                        <option value="delivered" {{ ($gr->status ?? '') == 'delivered' ? 'selected' : '' }}>Delivered</option>
+                                    </select>
+                                    <a href="{{ url('/gr/'.$gr->id.'/upload-pod') }}" class="btn btn-primary btn-sm">
+                                        <i class="fa fa-upload"></i> Upload POD
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-       <div class="content mt-3">
-            <div class="animated fadeIn">
+<script>
+function updateDeliveryStatus(id, status) {
+    $.ajax({
+        url: '/dash/gr/' + id + '/update-delivery-status',
+        type: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            status: status
+        },
+        success: function(response) {
+            alert('Delivery status updated');
+            location.reload();
+        },
+        error: function(xhr) {
+            alert('Error: ' + (xhr.responseJSON.message || 'Failed to update status'));
+        }
+    });
+}
 
- <div class="row">
-                  <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="row">
-                                <div class="col-6" >
-                                    <strong class="card-title">Subject to Rajkot Jurisdiction</strong>
-                                </div>
-                                <div class="col-6" >
-                                    <strong style="float:right" class="card-title">GST No.: 24AFSPJ7382P1ZI</strong>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                          <!-- Credit Card -->
-                          <div id="pay-invoice">
-                              <div class="card-body">
-                                  <div class="card-title">
-                                      <h3 class="text-center">SAURASHTRA EXPRESS</h3>
-                                      <p style="text-align: center;">H. O. :- 2- Patel Nagar, Bhoja Bhagat Street, 50ft Ring Road, Rajkot. <br>
-                                      Contact No. : 097279 00008, 93750 88088</p>
-                                  </div>
-                                  <hr>
-                                  @if(\Session::has('success'))
-                                  <div class="alert alert-success">
-                                    <p>{{\Session::get('success')}}</p>
-                                  </div>
-                                  @endif
-                                  
-                                  
-                                  @if ($errors->any())
-                                      <div class="alert alert-danger">
-                                          <ul>
-                                              @foreach ($errors->all() as $error)
-                                                  <li>{{ $error }}</li>
-                                              @endforeach
-                                          </ul>
-                                      </div>
-                                  @endif
-                                  <hr>
-                                  <!-- route('copies_update','$id') -->
-                          <form action="{{url('/dash/gr/'.$id.'/update')}}" method="post" novalidate="novalidate">
-                                    {{csrf_field()}}
-                                    <input type="hidden" name="_method" value="PATCH"/>
-                                        <div class="row">
-                                          <div class="col-12 col-lg-4">
-                                              <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>From</strong></label>
-                                                  <select name="from_dest" id="select"class="form-control">
-      <option value="Rajkot" {{ $copy->from_dest == 'Rajkot' ? 'selected' : '' }}>Rajkot </option>                                              
-    <option value="Kashmore Gate" {{ $copy->from_dest == 'Kashmore Gate' ? 'selected' : '' }}>Kashmore Gate</option>
-    <option value="Dayabasti" {{ $copy->from_dest == 'Dayabasti' ? 'selected' : '' }}>Dayabasti</option>
-    <option value="Swarup Nagar" {{ $copy->from_dest == 'Swarup Nagar'? 'Swarup Nagar' : '' }}>Swarup Nagar</option>
-    <option value="Navagam" {{ $copy->from_dest == 'Navagam' ? 'selected' : '' }}>Navagam</option>
-    <option value="Shapar (1)" {{ $copy->from_dest == 'Shapar (1)' ? 'selected' : '' }}>Shapar (1)</option>
-    <option value="Shapar (2)" {{ $copy->from_dest == 'Shapar (2)' ? 'selected' : '' }}>Shapar (2)</option>
-                                                   </select>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                          </div>
-                                          <div class="col-12 col-lg-4">
-                                              <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>To</strong>></label>
-                                                  <select name="to_dest" id="select" class="form-control">
-          <option value="Rajkot" {{ $copy->to_dest == 'Rajkot' ? 'selected' : '' }}>Rajkot </option>                                          
-       <option value="Kashmore Gate" {{ $copy->to_dest == 'Kashmore Gate' ? 'selected' : '' }}>Kashmore Gate</option>
-    <option value="Dayabasti" {{ $copy->to_dest == 'Dayabasti' ? 'selected' : '' }}>Dayabasti</option>
-    <option value="Swarup Nagar" {{ $copy->to_dest == 'Swarup Nagar' ? 'selected' : '' }}>Swarup Nagar</option>
-    <option value="Navagam" {{ $copy->to_dest == 'Navagam' ? 'selected' : '' }}>Navagam</option>
-    <option value="Shapar (1)" {{ $copy->to_dest == 'Shapar (1)' ? 'selected' : '' }}>Shapar (1)</option>
-    <option value="Shapar (2)" {{ $copy->to_dest == 'Shapar (2)' ? 'selected' : '' }}>Shapar (2)</option>
-                
-                                                   </select>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                          </div>
-                                         <div class="col-12 col-lg-4">
-                                              <label for="x_card_code" class="control-label mb-1"><strong>Date</strong></label>
-                                              <div class="input-group">
-                                                  <input name="copy_date" value="{{$copy->copy_date}}" type="text" class="form-control cc-name valid"readonly>
-                                                  </div>
-                                              </div>
-                                          </div>
-                                      
-                                       <div class="form-group"><label for="company" class=" form-control-label"><strong>GR Number</strong></label><input type="text" id="company" name='gr_no'placeholder="" value="{{$copy->gr_no}}"class="form-control"readonly></div>
-
-                                      <div class="form-group"><label for="company" name='consignor'class=" form-control-label"><strong>Consignor</strong></label><input type="text" id="company" placeholder=""value="{{$copy->consignor}}" name="consignor"class="form-control"></div> 
-
-                                     <div class="form-group"><label for="company" name="" class=" form-control-label"><strong>Address</strong></label><input type="text" id="company" name="nor_adress"placeholder="" value="{{$copy->nor_adress}}"class="form-control"></div>
-
-                                     
-                                     <div class="form-group"><label for="company" class=" form-control-label"><strong>GST No.</strong></label><input type="text" id="company"name="nor_gst_no" value="{{$copy->nor_gst_no}}"placeholder="" class="form-control"></div>
-
-                                     <div class="form-group"><label for="company" class=" form-control-label"><strong>Consignee</strong></label><input type="text" id="company" name="consignee" placeholder="" value="{{$copy->consignee}}"class="form-control"></div>
-
-                                     <div class="form-group"><label for="company" class=" form-control-label"><strong>Address</strong></label><input type="text" id="company" placeholder=""name="nee_adress" value="{{$copy->nee_adress}}"class="form-control"></div>
-
-                                     <div class="form-group"><label for="company" class=" form-control-label"><strong>GST No.</strong></label><input type="text" id="company" name="nee_gst_no"placeholder=""value="{{$copy->nee_gst_no}}" class="form-control"></div>
-                                        <table class="table table-bordered">
-                                        <tdead>
-                                            <tr>
-                                                <th scope="col"style="width: 10%">Nugs</th>
-                                                <th scope="col"style="width: 12%">Meth.</th>
-                                                <th scope="col" style="width: 52%" colspan="3">Description of  Goods (As Per Iteam)</th>
-                                                <th scope="col">Charge</th>
-                                                <th scope="col"  style="width: 20%">Amount Rs.</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                             <tr>
-                                                <td scope="row" rowspan="5">
-                                                    <input  class="form-control" s type="number" name="nugs" value="{{$copy->nugs}}">
-                                                </td>
-
-                                                <td scope="row" rowspan="5">
-                                                   <select name="meth" id="select" class="form-control">
-                                                   <option value="C_R" {{ $copy->meth == 'C_R' ? 'selected' : '' }}>C_R</option>
-                                                   <option value="C_B" {{ $copy->meth == 'C_B' ? 'selected' : '' }}>C_B</option>
-                                                   <option value="Bags" {{ $copy->meth == 'Bags' ? 'selected' : '' }}>Bags</option>
-                                                   
-                                                  </select>
-                                                               </td>
-                                            </tr>
-                                            <tr>
-                                                <td scope="row" colspan="3" rowspan="4"><textarea name="description" id="textarea-input" value="" rows="9" placeholder="Description" class="form-control">{{$copy->description}}</textarea></textarea></td>
-                                                <th>Freigt</th>
-                                                <td><input class="form-control sum"  s type="number"value="{{$copy->frieght_amount}}" name="frieght_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Sur. Ch.</th>
-                                                <td> <input class="form-control sum"  s type="number" value="{{$copy->sur_ch}}" name="sur_ch"></td>
-                                                
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">C/R.</th>
-                                                <td><input class="form-control sum" s type="number"value="{{$copy->c_r}}" name="c_r"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Other</th>
-                                                <td><input value="{{$copy->other}}" class="form-control sum" type="number" name="other"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row" colspan="2">Bill Amount : <input class="form-control" value="{{$copy->bill_amount}}"type="number" name="bill_amount"></th>
-                                                <th scope="row" colspan="3">E-Way Bill No : <input type="text" value="{{$copy->eway_bill_number}}"class="form-control" name="eway_bill_number"></th>
-                                                <th scope="row">BC</th>
-                                                <td><input class="form-control sum" class="form-control"  s type="number" value="{{$copy->bc_amount}}" name="bc_amount"></td>
-                                                
-                                            </tr>
-                                            <tr>
-                                               <th colspan="2">PM :<input class="form-control"value="{{$copy->pm}}"  type="text" name="pm"></th>
-                                               <th>Weight :<input class="form-control"  type="text" name="weight"value="{{$copy->weight}}"></th>
-                                               <th><label>To Pay:</label> <input class="form-control abc" value="1" type="checkbox" name="to_pay"{{($copy->to_pay == 1 ? 'checked':'')}}></th>
-                                               <th><label>Paid : </label><input  class="form-control abc"  type="checkbox" value="1" name="paid"{{($copy->paid == 1 ? 'checked':'')}} ></th>
-                                               <th scope="row">Total</th>
-                                                <td><input id="totalsum" class="form-control" type="number" value="{{$copy->total_amount}}" name="total_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <th colspan="5" rowspan="2">
-                                                    Termes & Conditions :
-                                                    <p>
-                                                        (1) We are not responsible of goods after 6 months of booking date. (2) Goods will not be Deliver without Consignee copy. (3) We are not responsible for damage, shortage or theft in transit. (4) The receipt without date will be cancelled. 
-                                                    </p>
-                                                </th>
-                                                <th colspan="2" rowspan="2"> {{$copy->from_dest}} Office Sign</th>
-                                            </tr>
-                                        </tbody>
-                                        </table>
-                                      <!-- <table class="table table-bordered">
-                                        <tdead>
-                                            <tr>
-                                                <th scope="col">Packages</th>
-                                                <th scope="col" style="width: 52%" colspan="3">Description of  Goods (As Per Iteam)</th>
-                                                <th scope="col">Charge</th>
-                                                <th scope="col"  style="width: 20%">Amount Rs.</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                             <tr>
-                                                <td scope="row" rowspan="5">
-                                                    <input  class="form-control" s type="number"value="{{$copy->packeges}}" name="packeges">
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td scope="row" colspan="3" rowspan="4"><textarea name="description" id="textarea-input" value="" rows="9" placeholder="Description" class="form-control">{{$copy->description}}</textarea></td>
-                                                <th>Freigt</th>
-                                                <td><input class="form-control"  s type="number"value="{{$copy->frieght_amount}}" name="frieght_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">Sur. Ch.</th>
-                                                <td> <input class="form-control"value="{{$copy->sur_ch}}"  s type="number" value="20" name="sur_ch"></td>
-                                                
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">C/R.</th>
-                                                <td><input class="form-control" s type="number"value="{{$copy->c_r}}" name="c_r"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">GST</th>
-                                                <td><input  class="form-control" value="{{$copy->gst_amount}}"type="number" name="gst_amount"></td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">PM</th>
-                                                <th scope="row">Weight</th>
-                                                <th scope="row">Paid At</th>
-                                                <th scope="row">T B B At</th>
-                                                <th scope="row">BC</th>
-                                                <td><input class="form-control" class="form-control"  s type="number" value="{{$copy->bc_amount}}"value="30" name="bc_amount"></td>
-                                                
-                                            </tr>
-                                            <tr>
-                                               <td><input class="form-control"  type="text" value="{{$copy->pm}}"name="pm"></td>
-                                               <td><input class="form-control"  type="number"value="{{$copy->weight}}" name="weight"></td>
-                                               <td><input class="form-control"  type="number"value="{{$copy->paid_at}}" name="paid_at"></td>
-                                               <td><input class="form-control"  type="number" value="{{$copy->tbb_at}}"name="tbb_at"></td>
-                                               <th scope="row">Total</th>
-                                                <td><input  value="{{$copy->total_amount}}"class="form-control" type="number" name="total_amount"></td>
-
-                                            </tr>
-                                            <tr>
-                                                <th colspan="4" rowspan="2">
-                                                    Termes & Conditions :
-                                                    <p>
-                                                        (1) We are not responsible of goods after 6 months of booking date. (2) Goods will not be Deliver without Consignee copy. (3) We are not responsible for damage, shortage or theft in transit. (4) The receipt without date will be cancelled. 
-                                                    </p>
-                                                </th>
-                                                <th colspan="2" rowspan="2">Sign</th>
-                                            </tr>
-                                        </tbody>
-                                        </table> -->
-                                      </div>
-                                       <div>
-                                          <button id="payment-button" type="submit" class="btn btn-success btn-lg btn-block">
-                                            
-                                              <span id="payment-button-amount">Update</span>
-                                              <span id="payment-button-sending" style="display:none;">Sending…</span>
-                                          </button>
-                                      </div>
-                                      </div>
-                                  </form>
-                              </div>
-                          </div>
-
-                        </div>
-                    </div> <!-- .card -->
-
-            </div><!-- .animated -->
-       
-                                     
+// Auto-calculate total
+(function() {
+    function calculateTotal() {
+        let total = 0;
+        document.querySelectorAll('.sum').forEach(function(input) {
+            total += parseFloat(input.value) || 0;
+        });
+        document.getElementById('totalsum').value = total.toFixed(2);
+    }
+    document.querySelectorAll('.sum').forEach(function(input) {
+        input.addEventListener('input', calculateTotal);
+    });
+})();
+</script>
 
 @endsection

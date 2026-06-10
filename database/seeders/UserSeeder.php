@@ -74,7 +74,7 @@ class UserSeeder extends Seeder
         $this->upsertUser([
             'name'     => 'Super Admin',
             'email'    => 'admin@sxpress.test',
-            'password' => Hash::make('password'),
+            'password' => 'password',
             'office'   => 'Rajkot',
             'phone'    => '+919999900001',
             'is_active'=> true,
@@ -99,7 +99,7 @@ class UserSeeder extends Seeder
                 $this->upsertUser([
                     'name'     => $name,
                     'email'    => strtolower($code).'-mgr@sxpress.test',
-                    'password' => Hash::make('password'),
+                    'password' => 'password',
                     'office'   => $branch->name,
                     'phone'    => $this->randomIndianPhone(),
                     'is_active'=> true,
@@ -115,7 +115,7 @@ class UserSeeder extends Seeder
             $this->upsertUser([
                 'name'     => "Operator $i",
                 'email'    => "operator{$i}@sxpress.test",
-                'password' => Hash::make('password'),
+                'password' => 'password',
                 'office'   => optional($branches->get('RJKT'))->name ?? 'Rajkot',
                 'phone'    => $this->randomIndianPhone(),
                 'is_active'=> true,

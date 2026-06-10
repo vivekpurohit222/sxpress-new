@@ -88,7 +88,7 @@
                                       </div>
                                   @endif
                                   <hr>
-                                  {{ Form::open(array('url' => 'dash/roles')) }}
+                                  {{ Form::open(array('url' => 'roles')) }}
                                  
                                     @csrf
                                         

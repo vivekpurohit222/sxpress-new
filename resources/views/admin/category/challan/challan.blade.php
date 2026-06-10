@@ -1,266 +1,409 @@
 @extends('admin.layout.master')
 @section('content')
-  <div class="breadcrumbs">
-            <div class="col-sm-4">
-                <div class="page-header float-left">
-                    <div class="page-title">
-                        <h1>Challan</h1>
-                    </div>
-                </div>
+
+<style>
+    .challan-form {
+        font-size: 12px;
+    }
+    .challan-form .form-group {
+        margin-bottom: 6px;
+    }
+    .challan-form label {
+        margin-bottom: 1px;
+        font-size: 11px;
+    }
+    .challan-form .form-control {
+        padding: 3px 6px;
+        font-size: 12px;
+        height: 28px;
+    }
+    .challan-form textarea.form-control {
+        height: 50px;
+        resize: none;
+    }
+    .challan-form table {
+        font-size: 11px;
+        margin-bottom: 6px;
+    }
+    .challan-form table th,
+    .challan-form table td {
+        padding: 3px 5px;
+        vertical-align: middle;
+    }
+    .challan-form table .form-control {
+        height: 24px;
+        padding: 2px 4px;
+        font-size: 11px;
+    }
+    .challan-form .btn {
+        padding: 5px 20px;
+        font-size: 12px;
+    }
+    .challan-form .card {
+        margin-bottom: 0;
+    }
+    .challan-form .card-body {
+        padding: 6px 12px;
+    }
+    .challan-form .card-header {
+        padding: 6px 15px;
+    }
+    .challan-form .content {
+        margin-top: 0.5rem;
+    }
+    .challan-form .breadcrumbs {
+        padding: 0.4rem 0;
+        margin-bottom: 0;
+    }
+    .challan-form .alert {
+        padding: 6px 12px;
+        margin-bottom: 6px;
+        font-size: 11px;
+    }
+    .challan-form .table-bordered th,
+    .challan-form .table-bordered td {
+        border: 1px solid #ccc;
+    }
+    .challan-form .t-c {
+        font-size: 9px;
+        line-height: 1.3;
+        color: #666;
+    }
+    .gr-item-row:hover {
+        background: #f8f9fa;
+    }
+    .gr-item-row .remove-btn {
+        color: #dc3545;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+    }
+    body {
+        overflow-x: hidden;
+    }
+</style>
+
+<div class="breadcrumbs">
+    <div class="col-sm-4">
+        <div class="page-header float-left">
+            <div class="page-title">
+                <h1>Challan</h1>
             </div>
-            <div class="col-sm-8">
-                <div class="page-header float-right">
-                    <div class="page-title">
-                        <ol class="breadcrumb text-right">
-                            <li><a href="{{url('/admin')}}"></li>
-                            <li><a href="{{url('/admin/back/gatepass')}}">Avaliable Challan</a></li>
-                            <li class="active"> Create Challan</li>
-                        </ol>
+        </div>
+    </div>
+    <div class="col-sm-8">
+        <div class="page-header float-right">
+            <div class="page-title">
+                <ol class="breadcrumb text-right">
+                    <li><a href="{{url('/dash')}}">Dashboard</a></li>
+                    <li><a href="{{url('/challan')}}">Challan List</a></li>
+                    <li class="active">Create Challan</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content mt-2 challan-form">
+    <div class="animated fadeIn">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header" style="padding:6px 15px">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong class="card-title">Subject to Rajkot Jurisdiction</strong>
+                            </div>
+                            <div class="col-6 text-right">
+                                <strong class="card-title">GST No.: 24AFSPJ7382P1ZI</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding:8px 15px">
+                        <div class="card-title">
+                            <h3 class="text-center" style="font-size:14px;margin:0">SAURASHTRA EXPRESS</h3>
+                            <p style="text-align:center;font-size:10px;margin:1px 0 0">H. O. :- 2- Patel Nagar, Bhoja Bhagat Street, 50ft Ring Road, Rajkot. <br>Contact No. : 097279 00008, 93750 88088</p>
+                        </div>
+                        <hr style="margin:6px 0">
+
+                        @if(Session::has('success'))
+                        <div class="alert alert-success py-1 mb-2">{{Session::get('success')}}</div>
+                        @endif
+                        @if($errors->any())
+                        <div class="alert alert-danger py-1 mb-2">
+                            @foreach($errors->all() as $e)<p class="mb-0">{{$e}}</p>@endforeach
+                        </div>
+                        @endif
+
+                        {{-- Challan Header Form --}}
+                        <form action="{{ route('challan.store') }}" method="POST" id="challan-form">
+                            @csrf
+                            <input type="hidden" name="challan_no" value="{{ $challanNo ?? '' }}">
+
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="mb-0"><strong>Office</strong></label>
+                                        <input type="text" class="form-control" value="{{ $office }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="mb-0"><strong>Challan No.</strong></label>
+                                        <input type="text" class="form-control" value="{{ $challanNo ?? '' }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="mb-0"><strong>Date</strong></label>
+                                        <input name="challan_date" type="text" value="{{$date}}" class="form-control" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="mb-0"><strong>From</strong></label>
+                                        <input type="text" class="form-control" value="{{ $office }}" readonly>
+                                        <input type="hidden" name="from_dest" value="{{ $office }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="mb-0"><strong>To</strong></label>
+                                        <select name="to_dest" class="form-control" required>
+                                            <option value="">Select</option>
+                                            @foreach($destinations as $dest)
+                                                @if($dest !== $office)
+                                                    <option value="{{ $dest }}">{{ $dest }}</option>
+                                                @endif
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="mb-0"><strong>Vehicle</strong></label>
+                                        <select name="vehicle_id" class="form-control" required>
+                                            <option value="">Select Vehicle</option>
+                                            @foreach($vehicles as $v)
+                                                <option value="{{ $v->id }}">{{ $v->vehicle_number }} ({{ $v->vehicle_type }})</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label class="mb-0"><strong>Driver</strong></label>
+                                        <select name="driver_id" class="form-control" required>
+                                            <option value="">Select Driver</option>
+                                            @foreach($drivers as $d)
+                                                <option value="{{ $d->id }}">{{ $d->driver_name }} ({{ $d->license }})</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- GR Search Section --}}
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <div class="card" style="background:#f8f9fa">
+                                        <div class="card-body" style="padding:8px">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <label class="mb-0"><strong>Search GR No.</strong></label>
+                                                    <div class="input-group">
+                                                        <input type="text" id="gr-search-input" class="form-control" placeholder="e.g. AA-00001">
+                                                        <div class="input-group-append">
+                                                            <button type="button" id="gr-search-btn" class="btn btn-primary btn-sm">Search</button>
+                                                        </div>
+                                                    </div>
+                                                    <div id="gr-search-results" class="autocomplete-dropdown" style="position:absolute;width:100%;z-index:1000;background:white;border:1px solid #ddd;display:none;max-height:150px;overflow-y:auto"></div>
+                                                </div>
+                                            </div>
+                                            <div id="gr-not-found" class="text-danger mt-1" style="font-size:11px;display:none">GR not found or already added.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- GR Items Table --}}
+                            <table class="table table-bordered table-sm mt-2" id="gr-items-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width:12%">GR No.</th>
+                                        <th style="width:6%">Nugs</th>
+                                        <th style="width:8%">Meth.</th>
+                                        <th style="width:25%">Description</th>
+                                        <th style="width:8%">Weight</th>
+                                        <th style="width:8%">Freight</th>
+                                        <th style="width:6%">Sur.Ch.</th>
+                                        <th style="width:6%">C/R</th>
+                                        <th style="width:6%">Other</th>
+                                        <th style="width:8%">Total</th>
+                                        <th style="width:5%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gr-items-body">
+                                    <tr id="no-items-row">
+                                        <td colspan="11" class="text-center text-muted" style="font-size:11px">No items added. Search GR above to add.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <textarea name="note" rows="2" class="form-control" placeholder="Note / Remarks" style="height:40px"></textarea>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <small class="t-c">T&C: (1) Not responsible after 6 months. (2) No delivery without Consignee copy. (3) No responsibility for damage/theft.</small>
+                                </div>
+                                <div class="col-md-3 text-right">
+                                    <button type="submit" id="submit-challan" class="btn btn-success btn-lg px-5" disabled>
+                                        <span>Submit Challan</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <div class="content mt-3">
-            <div class="animated fadeIn">
-                <div class="row">
-                  <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="row">
-                                <div class="col-6" >
-                                    <strong class="card-title">Challan</strong>
-                                </div>
-                                <div class="col-6" >
-                                    <strong style="float:right" class="card-title">GST No.: 24AFSPJ7382P1ZI</strong>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                          <!-- Credit Card -->
-                          <div id="pay-invoice">
-                              <div class="card-body">
-                                  <div class="card-title">
-                                      <h3 class="text-center">SAURASHTRA EXPRESS</h3>
-                                      <p style="text-align: center;">H. O. :- 2- Patel Nagar, Bhoja Bhagat Street, 50ft Ring Road, Rajkot. <br>
-                                      Contact No. : 097279 00008, 93750 88088</p>
-                                  </div>
+<script>
+var addedItems = [];
 
-                            <div class="alert alert-success d-none" id="challan_msg_div">
-                                                   <span id="challan_form_msg">
-                            </div>
+function renderItemsTable() {
+    var tbody = document.getElementById('gr-items-body');
+    var submitBtn = document.getElementById('submit-challan');
 
-                                  <hr>
-                                  <form action="javascript:void(0)" method="post" id="challanform"form="mail" novalidate="novalidate">
-                                        <div class="row">
-                                            <div class="col-12">
-                                                <h5 class="text-center">{{$users->office}}</h5>
-                                                <br>
-                                            </div>
-                                            <div class="col-12 col-lg-4">
-                                              <label for="x_card_code" class="control-label mb-1"><strong>Challan No. </strong></label>
-                                              <div class="input-group">
-                                                  <input name="challan_no" type="text" value="{{$new_id}}" class="form-control cc-name valid" readonly>
-                                                  </div>
-                                              </div>
-                                              <div class="col-lg-4">
-                                              </div>
-                                              <div class="col-12 col-lg-4">
-                                              <label for="x_card_code" class="control-label mb-1"><strong>Date</strong></label>
-                                              <div class="input-group">
-                                                  <input name="challan_date"value="{{$date}}" type="text" class="form-control cc-name valid" readonly>
-                                                  </div>
-                                              </div>
-                                            <div class="col-12 col-lg-4">
-                                              <label for="x_card_code" class="control-label mb-1"><strong>Truck No.</strong></label>
-                                              <div class="input-group">
-                                                  <input name="truck_no" type="text" value="{{$truck_no->truck_no}}"class="form-control cc-name valid" readonly>
-                                                  </div>
-                                              </div>
-                                              <div class="col-12 col-lg-4">
-                                                <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>From</strong></label>
-                                                 <select name="from_dest" id="select" class="form-control" disabled >
-    <option value="Kashmore Gate" {{ $users->office == 'Kashmore Gate' ? 'selected' : '' }}>Kashmore Gate</option>
-    <option value="Rajkot" {{ $users->office == 'Rajkot' ? 'selected' : '' }}>Rajkot</option>
-    <option value="Dayabasti" {{ $users->office == 'Dayabasti' ? 'selected' : '' }}>Dayabasti</option>
-    <option value="Swarup Nagar" {{ $users->office == 'Swarup Nagar'? 'selected' : '' }}>Swarup Nagar</option>
-    <option value="Navagam" {{ $users->office == 'Navagam' ? 'selected' : '' }}>Navagam</option>
-    <option value="Shapar (1)" {{ $users->office == 'Shapar (1)' ? 'selected' : '' }}>Shapar (1)</option>
-    <option value="Shapar (2)" {{ $users->office == 'Shapar (2)' ? 'selected' : '' }}>Shapar (2)</option>
-                                                   </select>
-                                                    <select name="from_dest" hidden="true" class="form-control"  >
-    <option value="Kashmore Gate" {{ $users->office == 'Kashmore Gate' ? 'selected' : '' }}>Kashmore Gate</option>
-    <option value="Rajkot" {{ $users->office == 'Rajkot' ? 'selected' : '' }}>Rajkot</option>
-    <option value="Dayabasti" {{ $users->office == 'Dayabasti' ? 'selected' : '' }}>Dayabasti</option>
-    <option value="Swarup Nagar" {{ $users->office == 'Swarup Nagar'? 'selected' : '' }}>Swarup Nagar</option>
-    <option value="Navagam" {{ $users->office == 'Navagam' ? 'selected' : '' }}>Navagam</option>
-    <option value="Shapar (1)" {{ $users->office == 'Shapar (1)' ? 'selected' : '' }}>Shapar (1)</option>
-    <option value="Shapar (2)" {{ $users->office == 'Shapar (2)' ? 'selected' : '' }}>Shapar (2)</option>
-                                                   </select>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                              </div>
-                                              <div class="col-12 col-lg-4">
-                                                <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>To</strong></label>
-                                                 <select name="to_dest"  class="form-control">
-                                                     <option value="Kashmore Gate  ">Kashmore Gate </option>
-                                                    <option value="Dayabasti">Dayabasti</option>
-                                                    <option value="Swarup Nagar">Swarup Nagar</option>
-                                                    <option value="Navagam">Navagam</option>
-                                                    <option value="Shapar (1)">Shapar (1)</option>
-                                                    <option value="Shapar (2)">Shapar (2)</option>
-                                                  
-                                                   </select>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                              </div>
-                                              <div class="col-12 col-lg-4">
-                                                <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>Driver's Name</strong></label>
-                                                  <div class="input-group">
-                                                  <input name="driver_name" type="text"value="{{$truck_no->driver_name}}" class="form-control cc-name valid" readonly>
-                                                  </div>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                              </div>
-                                              <!-- <div class="col-12 col-lg-4">
-                                                <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>Address</strong></label>
-                                                  <div class="input-group">
-                                                  <input name="" type="text" class="form-control cc-name valid">
-                                                  </div>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div> </div>-->
-                                              
-                                              <div class="col-12 col-lg-4">
-                                                <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>LIC NO.</strong></label>
-                                                  <div class="input-group">
-                                                  <input name="license" value="{{$truck_no->license}}"type="text" class="form-control cc-name valid" readonly>
-                                                  </div>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                              </div>
-                                              <div class="col-12 col-lg-4">
-                                                <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>Owner</strong></label>
-                                                  <div class="input-group">
-                                                  <input name="owner_name" type="text" class="form-control cc-name valid">
-                                                  </div>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                              </div>
-                                              <div class="col-12 col-lg-12">
-                                                <div class="form-group">
-                                                  <label for="cc-exp" class="control-label mb-1"><strong>Note</strong></label>
-                                                  <div class="input-group">
-                                                  <textarea name="note" rows="3" class="form-control"></textarea>
-                                                  </div>
-                                                  <span class="help-block" data-valmsg-for="cc-exp" data-valmsg-replace="true"></span>
-                                              </div>
-                                              </div>
-                                              <div class="col-12 col-lg-12">
-                                                <div class="form-group">
-                                                  <input id="challan_button" type="button" value="submit" class="btn btn-success btn-lg float-right ">
-                                            
-                                             
-                                              </div>
-                                              </div>
-                                              <div class="col-12 col-lg-12">
-                                                <div class="form-group">
-                                                </div>
-                                                </div> 
-                                            </div>
-                                               
-                                               </form>
+    if (addedItems.length === 0) {
+        tbody.innerHTML = '<tr id="no-items-row"><td colspan="11" class="text-center text-muted" style="font-size:11px">No items added. Search GR above to add.</td></tr>';
+        submitBtn.disabled = true;
+        return;
+    }
 
-                                              <table id='userTable' class="table table-bordered">
-                                                
-                                            </tr>
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">GR. No.</th>
-                                                <th scope="col" >Nos.</th>
-                                                <th scope="col" >Methods of Pkgs.</th>
-                                                <th scope="col" >DESCRCRIPTION</th>
-                                                <th scope="col" >Weight</th>
-                                                <th scope="col" >FREIGHT To Pay</th>
-                                                <th scope="col" >FREIGHT Paid</th>
-                                                <th scope="col" >Service Tax</th>
-                                                <th scope="col" >CR</th>
-                                                <th scope="col" >Sur Ch.</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                           <form id="contact_us" method="post" action="javascript:void(0)">
+    submitBtn.disabled = false;
+    tbody.innerHTML = '';
 
-                                             <div class="alert alert-success d-none" id="msg_div">
-                                                   <span id="res_message">
-                                             </div>
-                                              <tr class="grinfo">
-                                                <input name="challan_no"  id="challan_no"type="text" value="{{$new_id}}" class="form-control cc-name valid" hidden>
-                                                <td><input id="grsearch" name="gr_no" type="text"class="form-control ">
-                                                  </td>
-                                                <td><input id="nugs"name="nugs" type="text"class="form-control cc-name valid" readonly></td>
-                                                <td><input id="meth" name="meth" type="text"class="form-control cc-name valid" readonly></td>
-                                                <td><input id="description" name="description" type="text"class="form-control cc-name valid" readonly></td>
-                                                <td><input id="weight" name="weight" type="number"class="form-control cc-name valid" readonly></td>
-                                                <td><input id="paid" name="paid" type="number"class="form-control cc-name valid" readonly></td>
-                                                <td><input id="to_pay" name="to_pay" type="number"class="form-control cc-name valid" readonly></td>
-                                                <td><input id="sur_ch" name="sur_ch" type="number"class="form-control cc-name valid" readonly></td>
-                                                <td><input  id="c_r" name="c_r" type="number"class="form-control cc-name valid" readonly></td>
-                                                <td><input id="other" name="other" type="number"class="form-control cc-name valid" readonly ></td>
-                                            </tr>
+    addedItems.forEach(function(item, index) {
+        var tr = document.createElement('tr');
+        tr.className = 'gr-item-row';
+        tr.innerHTML = '<td>' + item.gr_no + '<input type="hidden" name="items[' + index + '][gr_no]" value="' + item.gr_no + '"></td>' +
+            '<td>' + item.nugs + '<input type="hidden" name="items[' + index + '][nugs]" value="' + item.nugs + '"></td>' +
+            '<td>' + item.meth + '<input type="hidden" name="items[' + index + '][meth]" value="' + item.meth + '"></td>' +
+            '<td>' + item.description + '<input type="hidden" name="items[' + index + '][description]" value="' + item.description + '"></td>' +
+            '<td>' + item.weight + '<input type="hidden" name="items[' + index + '][weight]" value="' + item.weight + '"></td>' +
+            '<td>' + item.frieght_amount + '</td>' +
+            '<td>' + item.sur_ch + '</td>' +
+            '<td>' + item.c_r + '</td>' +
+            '<td>' + item.other + '</td>' +
+            '<td>' + item.total_amount + '</td>' +
+            '<td><span class="remove-btn" onclick="removeItem(' + index + ')">&times;</span></td>';
+        tbody.appendChild(tr);
+    });
+}
 
-                                            <tr>
-                                            <td colspan="12">
-                                              <input type='button' value='Search' class="btn btn-primary btn-lg float-left"id="fetchgr">
-                                                
-                                               <input type="button" value="Challan data Submit" id="send_form" class="btn btn-success btn-lg float-right">
-                                            </form> 
-                                            <input type='text' value="{{$new_id}}" id='challanfetchdata' name='challanfetchdata' placeholder='' hidden>
-                                            <input type='button' style="margin-left:20px"class="btn btn-warning btn-lg float-left" value='Fetch All Records' id='fetchChallanAllRecord'>
-                                            </td>
-                                          
-                                            </tr>
-                                            
-                                            <td colspan="12">
-                                              <table border='1' id='challantable' style='border-collapse: collapse;'>
-                                            <thead>
-                                              <tr>
-                                                <th scope="col">GR. No.</th>
-                                                <th scope="col" >Nos.</th>
-                                                <th scope="col" >Methods of Pkgs.</th>
-                                                <th scope="col" >DESCRCRIPTION</th>
-                                                <th scope="col" >Weight</th>
-                                                <th scope="col" >FREIGHT To Pay</th>
-                                                <th scope="col" >FREIGHT Paid</th>
-                                                <th scope="col" >Service Tax</th>
-                                                <th scope="col" >CR</th>
-                                                <th scope="col" >Sur Ch.</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody class="ch"></tbody>
-                                          </table>
-                                            </td>
-                                            
-                                        </tbody>
-                                        </table>
-                                          </div>
-                                      </form>
-                                      <br>
-                                        </div>
-                                      </div>
-                              </div>
-                          </div>
-                        </div>
-                    </div> <!-- .card -->
-            </div><!-- .animated -->
-        </div><!-- .content -->
+function removeItem(index) {
+    addedItems.splice(index, 1);
+    renderItemsTable();
+}
 
+document.getElementById('gr-search-btn').addEventListener('click', function() {
+    var q = document.getElementById('gr-search-input').value.trim();
+    if (q.length < 2) return;
 
-    </div><!-- /#right-panel -->
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Searching...';
+
+    fetch('/gr/autocomplete?q=' + encodeURIComponent(q))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var resultsDiv = document.getElementById('gr-search-results');
+            var notFound = document.getElementById('gr-not-found');
+            resultsDiv.innerHTML = '';
+            resultsDiv.style.display = 'none';
+            notFound.style.display = 'none';
+
+            if (data.length === 0) {
+                notFound.style.display = 'block';
+                return;
+            }
+
+            data.forEach(function(gr) {
+                var div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.innerHTML = '<div class="name">' + gr.gr_no + '</div><div class="details">' + gr.consignor + ' → ' + gr.consignee + ' | ' + gr.from_dest + ' → ' + gr.to_dest + '</div>';
+                div.style.cursor = 'pointer';
+                div.addEventListener('click', function() {
+                    addGrToChallan(gr);
+                    resultsDiv.style.display = 'none';
+                    document.getElementById('gr-search-input').value = '';
+                });
+                resultsDiv.appendChild(div);
+            });
+            resultsDiv.style.display = 'block';
+        })
+        .catch(function() {
+            document.getElementById('gr-not-found').style.display = 'block';
+        })
+        .finally(function() {
+            btn.disabled = false;
+            btn.textContent = 'Search';
+        });
+});
+
+function addGrToChallan(gr) {
+    // Check if already added
+    for (var i = 0; i < addedItems.length; i++) {
+        if (addedItems[i].gr_no === gr.gr_no) {
+            alert('GR ' + gr.gr_no + ' already added!');
+            return;
+        }
+    }
+
+    addedItems.push({
+        gr_no: gr.gr_no,
+        nugs: gr.nugs || 0,
+        meth: gr.meth || '',
+        description: gr.description || (gr.consignor + ' → ' + gr.consignee),
+        weight: gr.weight || 0,
+        frieght_amount: gr.frieght_amount || 0,
+        sur_ch: gr.sur_ch || 0,
+        c_r: gr.c_r || 0,
+        other: gr.other || 0,
+        total_amount: gr.total_amount || 0,
+    });
+
+    renderItemsTable();
+}
+
+document.getElementById('gr-search-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('gr-search-btn').click();
+    }
+});
+
+document.addEventListener('click', function(e) {
+    var resultsDiv = document.getElementById('gr-search-results');
+    var input = document.getElementById('gr-search-input');
+    if (!input.contains(e.target) && !resultsDiv.contains(e.target)) {
+        resultsDiv.style.display = 'none';
+    }
+});
+
+// Form submit
+document.getElementById('challan-form').addEventListener('submit', function(e) {
+    if (addedItems.length === 0) {
+        e.preventDefault();
+        alert('Please add at least one GR item.');
+        return;
+    }
+    // Let the form submit normally - controller will handle items from the hidden inputs
+});
+</script>
 
 @endsection

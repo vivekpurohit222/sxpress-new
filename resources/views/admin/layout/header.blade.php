@@ -87,7 +87,7 @@
                             <img class="user-avatar rounded-circle" src="{{asset('public/admin/images/admin.jpg')}}" alt="User Avatar">
                         </a> -->
                       <!--   <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    {{ Auth::user()->name }}
+                                    {{ Auth::check() ? Auth::user()->name : 'User' }}
                         </a>
 
 
@@ -225,7 +225,7 @@
                             <img class="user-avatar rounded-circle" src="{{asset('public/admin/images/admin.jpg')}}" alt="User Avatar">
                         </a> -->
                         <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    {{ Auth::user()->name }}
+                                    {{ Auth::check() ? Auth::user()->name : 'User' }}
                         </a>
                         <div class="user-menu dropdown-menu">
                                  <a class="dropdown-item" href="{{ route('logout') }}"
