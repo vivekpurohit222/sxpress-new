@@ -203,24 +203,22 @@
                                 </div>
                             </div>
 
-                            {{-- GR Search Section --}}
+                            {{-- GR Auto-Suggest Section --}}
                             <div class="row mt-2">
                                 <div class="col-12">
                                     <div class="card" style="background:#f8f9fa">
                                         <div class="card-body" style="padding:8px">
                                             <div class="row">
-                                                <div class="col-md-4">
-                                                    <label class="mb-0"><strong>Search GR No.</strong></label>
-                                                    <div class="input-group">
-                                                        <input type="text" id="gr-search-input" class="form-control" placeholder="e.g. AA-00001">
-                                                        <div class="input-group-append">
-                                                            <button type="button" id="gr-search-btn" class="btn btn-primary btn-sm">Search</button>
-                                                        </div>
-                                                    </div>
-                                                    <div id="gr-search-results" class="autocomplete-dropdown" style="position:absolute;width:100%;z-index:1000;background:white;border:1px solid #ddd;display:none;max-height:150px;overflow-y:auto"></div>
+                                                <div class="col-md-5" style="position:relative">
+                                                    <label class="mb-0"><strong>Add GR</strong></label>
+                                                    <input type="text" id="gr-search-input" class="form-control" placeholder="Start typing GR no, consignor or consignee..." autocomplete="off">
+                                                    <div id="gr-search-results" style="position:absolute;left:15px;right:15px;top:100%;z-index:1050;background:#fff;border:1px solid #ddd;border-radius:0 0 4px 4px;max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.15)"></div>
+                                                </div>
+                                                <div class="col-md-7 d-flex align-items-end">
+                                                    <small class="text-muted">Type at least 2 characters — suggestions will appear automatically</small>
                                                 </div>
                                             </div>
-                                            <div id="gr-not-found" class="text-danger mt-1" style="font-size:11px;display:none">GR not found or already added.</div>
+                                            <div id="gr-not-found" class="text-danger mt-1" style="font-size:11px;display:none">No matching GR found. Check the number or try consignor/consignee name.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -273,13 +271,14 @@
 
 <script>
 var addedItems = [];
+var searchTimer = null;
 
 function renderItemsTable() {
     var tbody = document.getElementById('gr-items-body');
     var submitBtn = document.getElementById('submit-challan');
 
     if (addedItems.length === 0) {
-        tbody.innerHTML = '<tr id="no-items-row"><td colspan="11" class="text-center text-muted" style="font-size:11px">No items added. Search GR above to add.</td></tr>';
+        tbody.innerHTML = '<tr id="no-items-row"><td colspan="11" class="text-center text-muted" style="font-size:11px">No items added. Type a GR number above to add.</td></tr>';
         submitBtn.disabled = true;
         return;
     }
@@ -310,56 +309,10 @@ function removeItem(index) {
     renderItemsTable();
 }
 
-document.getElementById('gr-search-btn').addEventListener('click', function() {
-    var q = document.getElementById('gr-search-input').value.trim();
-    if (q.length < 2) return;
-
-    var btn = this;
-    btn.disabled = true;
-    btn.textContent = 'Searching...';
-
-    fetch('/gr/autocomplete?q=' + encodeURIComponent(q))
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            var resultsDiv = document.getElementById('gr-search-results');
-            var notFound = document.getElementById('gr-not-found');
-            resultsDiv.innerHTML = '';
-            resultsDiv.style.display = 'none';
-            notFound.style.display = 'none';
-
-            if (data.length === 0) {
-                notFound.style.display = 'block';
-                return;
-            }
-
-            data.forEach(function(gr) {
-                var div = document.createElement('div');
-                div.className = 'autocomplete-item';
-                div.innerHTML = '<div class="name">' + gr.gr_no + '</div><div class="details">' + gr.consignor + ' → ' + gr.consignee + ' | ' + gr.from_dest + ' → ' + gr.to_dest + '</div>';
-                div.style.cursor = 'pointer';
-                div.addEventListener('click', function() {
-                    addGrToChallan(gr);
-                    resultsDiv.style.display = 'none';
-                    document.getElementById('gr-search-input').value = '';
-                });
-                resultsDiv.appendChild(div);
-            });
-            resultsDiv.style.display = 'block';
-        })
-        .catch(function() {
-            document.getElementById('gr-not-found').style.display = 'block';
-        })
-        .finally(function() {
-            btn.disabled = false;
-            btn.textContent = 'Search';
-        });
-});
-
 function addGrToChallan(gr) {
-    // Check if already added
     for (var i = 0; i < addedItems.length; i++) {
         if (addedItems[i].gr_no === gr.gr_no) {
-            alert('GR ' + gr.gr_no + ' already added!');
+            alert('GR ' + gr.gr_no + ' is already added!');
             return;
         }
     }
@@ -380,29 +333,91 @@ function addGrToChallan(gr) {
     renderItemsTable();
 }
 
-document.getElementById('gr-search-input').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('gr-search-btn').click();
+// Auto-suggest: triggers on typing (no button needed)
+var grInput = document.getElementById('gr-search-input');
+var resultsDiv = document.getElementById('gr-search-results');
+var notFound = document.getElementById('gr-not-found');
+
+grInput.addEventListener('input', function() {
+    var q = this.value.trim();
+    clearTimeout(searchTimer);
+    notFound.style.display = 'none';
+
+    if (q.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
     }
+
+    searchTimer = setTimeout(function() {
+        fetch('/gr/autocomplete?q=' + encodeURIComponent(q))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                resultsDiv.innerHTML = '';
+
+                if (data.length === 0) {
+                    resultsDiv.style.display = 'none';
+                    notFound.style.display = 'block';
+                    return;
+                }
+
+                data.forEach(function(gr) {
+                    // Skip already-added GRs
+                    for (var i = 0; i < addedItems.length; i++) {
+                        if (addedItems[i].gr_no === gr.gr_no) return;
+                    }
+
+                    var div = document.createElement('div');
+                    div.style.cssText = 'padding:6px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:12px';
+                    div.innerHTML = '<strong>' + gr.gr_no + '</strong> — ' +
+                        '<span style="color:#555">' + (gr.consignor || '') + ' → ' + (gr.consignee || '') + '</span>' +
+                        ' <span style="color:#888;font-size:10px">| ' + (gr.from_dest || '') + ' → ' + (gr.to_dest || '') +
+                        ' | ₹' + (gr.total_amount || 0) + ' | ' + (gr.weight || 0) + 'kg</span>';
+
+                    div.addEventListener('mouseenter', function() { this.style.background = '#f0f7ff'; });
+                    div.addEventListener('mouseleave', function() { this.style.background = '#fff'; });
+                    div.addEventListener('click', function() {
+                        addGrToChallan(gr);
+                        resultsDiv.style.display = 'none';
+                        grInput.value = '';
+                        grInput.focus();
+                    });
+                    resultsDiv.appendChild(div);
+                });
+
+                if (resultsDiv.children.length > 0) {
+                    resultsDiv.style.display = 'block';
+                } else {
+                    resultsDiv.style.display = 'none';
+                    notFound.style.display = 'block';
+                }
+            })
+            .catch(function() {
+                resultsDiv.style.display = 'none';
+            });
+    }, 250);
 });
 
+// Hide dropdown when clicking outside
 document.addEventListener('click', function(e) {
-    var resultsDiv = document.getElementById('gr-search-results');
-    var input = document.getElementById('gr-search-input');
-    if (!input.contains(e.target) && !resultsDiv.contains(e.target)) {
+    if (!grInput.contains(e.target) && !resultsDiv.contains(e.target)) {
         resultsDiv.style.display = 'none';
     }
 });
 
-// Form submit
+// Prevent Enter from submitting form while typing in search
+grInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+    }
+});
+
+// Form submit validation
 document.getElementById('challan-form').addEventListener('submit', function(e) {
     if (addedItems.length === 0) {
         e.preventDefault();
         alert('Please add at least one GR item.');
         return;
     }
-    // Let the form submit normally - controller will handle items from the hidden inputs
 });
 </script>
 
