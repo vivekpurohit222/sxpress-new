@@ -33,13 +33,13 @@ Route::middleware(['auth'])->group(function () {
         if (!auth()->user()->hasRole('SuperAdmin')) abort(403);
         $office = $request->validate(['office' => 'required|exists:branches,branch_name'])['office'];
         session(['impersonating_office' => $office]);
-        return redirect()->back()->with('success', "Now working as: {$office}");
+        return redirect()->back();
     })->name('impersonate.office');
 
     Route::post('/stop-impersonating', function () {
         if (!auth()->user()->hasRole('SuperAdmin')) abort(403);
         session()->forget('impersonating_office');
-        return redirect()->back()->with('success', 'Switched back to SuperAdmin (all offices).');
+        return redirect()->back();
     })->name('impersonate.stop');
 
     // ═══════════════════════════════════════════════════════════════════════════

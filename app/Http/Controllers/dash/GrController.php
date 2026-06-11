@@ -96,12 +96,14 @@ class GrController extends Controller
             return redirect()->route('login');
         }
 
-        $office = $user->office;
+        // Use currentOffice() which respects impersonation
+        $office = $this->currentOffice();
 
-        // SuperAdmin can create GR for any office — show selector
-        // Other roles always use their own office
+        // SuperAdmin WITHOUT impersonation can pick any office
+        // SuperAdmin WITH impersonation is locked to impersonated office
+        // Other roles always locked to their own office
         $branches = [];
-        if ($this->isSuperAdmin()) {
+        if ($this->isSuperAdmin() && !$this->isImpersonating()) {
             $branches = Branch::active()->orderBy('branch_name')->get();
         }
 
@@ -111,7 +113,7 @@ class GrController extends Controller
         // Load destinations dynamically from branches table
         $destinations = Branch::active()->orderBy('branch_name')->pluck('branch_name')->all();
 
-        return view('admin.category.copies', compact('newGrNo', 'date', 'user', 'destinations', 'branches'));
+        return view('admin.category.copies', compact('newGrNo', 'date', 'user', 'destinations', 'branches', 'office'));
     }
 
     /**

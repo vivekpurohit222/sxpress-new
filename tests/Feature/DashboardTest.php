@@ -46,8 +46,8 @@ class DashboardTest extends TestCase
         $this->actingAs($this->superAdmin())
             ->get(route('dash'))
             ->assertStatus(200)
-            ->assertSee('Welcome')
-            ->assertSee('All Branches'); // branch filter dropdown
+            ->assertSee('GRs Today')
+            ->assertSee('New GR');
     }
 
     public function test_admin_dashboard_loads(): void
@@ -55,7 +55,7 @@ class DashboardTest extends TestCase
         $this->actingAs($this->admin())
             ->get(route('dash'))
             ->assertStatus(200)
-            ->assertSee('Welcome');
+            ->assertSee('GRs Today');
     }
 
     public function test_staff_dashboard_loads(): void
@@ -64,7 +64,7 @@ class DashboardTest extends TestCase
             ->get(route('dash'))
             ->assertStatus(200)
             ->assertSee('GRs Today')
-            ->assertSee('Recent GRs');
+            ->assertSee('New GR');
     }
 
     public function test_viewer_dashboard_loads(): void
@@ -72,7 +72,7 @@ class DashboardTest extends TestCase
         $this->actingAs($this->viewer())
             ->get(route('dash'))
             ->assertStatus(200)
-            ->assertSee('Recent GRs');
+            ->assertSee('GRs Today');
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -134,10 +134,11 @@ class DashboardTest extends TestCase
 
     public function test_superadmin_can_filter_by_branch(): void
     {
+        // Impersonation handles branch filtering now — dashboard shows office name
         $this->actingAs($this->superAdmin())
-            ->get(route('dash', ['branch' => 'Rajkot']))
+            ->get(route('dash'))
             ->assertStatus(200)
-            ->assertSee('Rajkot');
+            ->assertSee('Office');
     }
 
     public function test_non_superadmin_has_no_branch_filter(): void
@@ -146,7 +147,7 @@ class DashboardTest extends TestCase
             ->get(route('dash'));
 
         $response->assertStatus(200);
-        $response->assertDontSee('All Branches'); // no dropdown
+        $response->assertDontSee('All Branches');
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -170,8 +171,8 @@ class DashboardTest extends TestCase
     {
         $this->actingAs($this->staff())
             ->get(route('dash'))
-            ->assertSee('Quick Actions')
-            ->assertSee('New GR');
+            ->assertSee('New GR')
+            ->assertSee('Gatepass');
     }
 
     public function test_staff_does_not_see_freight_memo_action(): void

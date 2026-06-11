@@ -212,15 +212,15 @@
                                                 {{-- SuperAdmin: selectable office dropdown --}}
                                                 <select name="from_dest" id="from_dest" class="form-control" required onchange="onOfficeChange(this.value)">
                                                     @foreach($branches as $branch)
-                                                        <option value="{{ $branch->branch_name }}" {{ $user->office == $branch->branch_name ? 'selected' : '' }}>
+                                                        <option value="{{ $branch->branch_name }}" {{ $office == $branch->branch_name ? 'selected' : '' }}>
                                                             {{ $branch->branch_name }} ({{ $branch->gr_prefix }})
                                                         </option>
                                                     @endforeach
                                                 </select>
                                                 @else
                                                 {{-- Staff/Manager/Admin: locked to own office --}}
-                                                <input type="text" class="form-control" value="{{ $user->office }}" readonly>
-                                                <input type="hidden" name="from_dest" value="{{ $user->office }}">
+                                                <input type="text" class="form-control" value="{{ $office }}" readonly>
+                                                <input type="hidden" name="from_dest" value="{{ $office }}">
                                                 @endif
                                             </div>
                                         </div>
@@ -230,7 +230,7 @@
                                                 <select name="to_dest" id="to_dest" class="form-control" required>
                                                     <option value="">Select Destination</option>
                                                     @foreach($destinations as $dest)
-                                                        @if($dest !== $user->office)
+                                                        @if($dest !== $office)
                                                             <option value="{{ $dest }}" {{ old('to_dest') == $dest ? 'selected' : '' }}>{{ $dest }}</option>
                                                         @endif
                                                     @endforeach
@@ -328,7 +328,7 @@
                                                 <td colspan="2">
                                                     Total: <input id="totalsum" class="form-control" type="number" name="total_amount" value="{{ old('total_amount') }}" readonly style="background:#eee;width:80px;display:inline" placeholder="0">
                                                 </td>
-                                                <td>{{$user->office}}</td>
+                                                <td>{{$office}}</td>
                                             </tr>
                                             <tr>
                                                 <td colspan="10">
@@ -368,13 +368,13 @@
         const q = this.value.trim();
         clearTimeout(timeout);
 
-        if (q.length < 3) {
+        if (q.length < 2) {
             consignorDropdown.classList.remove('show');
             return;
         }
 
         timeout = setTimeout(function() {
-            fetch('/dash/gr/autocomplete/consignor?q=' + encodeURIComponent(q))
+            fetch('/gr/autocomplete/consignor?q=' + encodeURIComponent(q))
                 .then(r => r.json())
                 .then(data => {
                     consignorDropdown.innerHTML = '';
@@ -419,13 +419,13 @@
         const q = this.value.trim();
         clearTimeout(timeout);
 
-        if (q.length < 3) {
+        if (q.length < 2) {
             consigneeDropdown.classList.remove('show');
             return;
         }
 
         timeout = setTimeout(function() {
-            fetch('/dash/gr/autocomplete/consignee?q=' + encodeURIComponent(q))
+            fetch('/gr/autocomplete/consignee?q=' + encodeURIComponent(q))
                 .then(r => r.json())
                 .then(data => {
                     consigneeDropdown.innerHTML = '';
