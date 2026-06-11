@@ -95,7 +95,7 @@
 function markTopayCollected(id) {
     if (confirm('Mark TO-PAY as collected for this GR?')) {
         $.ajax({
-            url: '/dash/gr/' + id + '/mark-topay-collected',
+            url: '/gr/' + id + '/mark-topay-collected',
             type: 'POST',
             data: {
                 _token: '{{ csrf_token() }}'
@@ -114,7 +114,7 @@ function markTopayCollected(id) {
 function undoTopayCollected(id) {
     if (confirm('Undo TO-PAY collection?')) {
         $.ajax({
-            url: '/dash/gr/' + id + '/undo-topay-collected',
+            url: '/gr/' + id + '/undo-topay-collected',
             type: 'POST',
             data: {
                 _token: '{{ csrf_token() }}'

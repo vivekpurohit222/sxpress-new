@@ -207,9 +207,21 @@
                                     <div class="row">
                                         <div class="col-12 col-lg-4">
                                             <div class="form-group">
-                                                <label for="from_dest" class="control-label mb-1"><strong>From</strong></label>
+                                                <label for="from_dest" class="control-label mb-1"><strong>From (Office)</strong></label>
+                                                @if(isset($branches) && count($branches) > 0)
+                                                {{-- SuperAdmin: selectable office dropdown --}}
+                                                <select name="from_dest" id="from_dest" class="form-control" required onchange="onOfficeChange(this.value)">
+                                                    @foreach($branches as $branch)
+                                                        <option value="{{ $branch->branch_name }}" {{ $user->office == $branch->branch_name ? 'selected' : '' }}>
+                                                            {{ $branch->branch_name }} ({{ $branch->gr_prefix }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                @else
+                                                {{-- Staff/Manager/Admin: locked to own office --}}
                                                 <input type="text" class="form-control" value="{{ $user->office }}" readonly>
                                                 <input type="hidden" name="from_dest" value="{{ $user->office }}">
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-12 col-lg-4">
@@ -540,6 +552,40 @@
         return true;
     });
 })();
+
+// SuperAdmin: Update GR number when office is changed
+function onOfficeChange(office) {
+    if (!office) return;
+
+    var grInput = document.getElementById('gr_no');
+    if (grInput) {
+        grInput.value = 'Loading...';
+    }
+
+    fetch('/gr/next-number/' + encodeURIComponent(office))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.gr_no && grInput) {
+                grInput.value = data.gr_no;
+            }
+        })
+        .catch(function() {
+            if (grInput) grInput.value = '??-?????';
+        });
+
+    // Also update To dropdown — remove selected office from destinations
+    var toDest = document.getElementById('to_dest');
+    if (toDest) {
+        var options = toDest.querySelectorAll('option');
+        options.forEach(function(opt) {
+            if (opt.value === '') return;
+            opt.style.display = (opt.value === office) ? 'none' : '';
+            if (opt.value === office && opt.selected) {
+                toDest.value = '';
+            }
+        });
+    }
+}
 </script>
 
 @endsection

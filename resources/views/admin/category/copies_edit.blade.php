@@ -339,7 +339,7 @@
                                         @if($gr->pod_file)
                                         <tr>
                                             <th>POD:</th>
-                                            <td><a href="{{ Storage::url($gr->pod_file) }}" target="_blank" class="btn btn-sm btn-info">View POD</a></td>
+                                            <td><a href="{{ url('/gr/'.$gr->id.'/pod') }}" target="_blank" class="btn btn-sm btn-info">View POD</a></td>
                                         </tr>
                                         @endif
                                     </table>
@@ -367,7 +367,7 @@
 <script>
 function updateDeliveryStatus(id, status) {
     $.ajax({
-        url: '/dash/gr/' + id + '/update-delivery-status',
+        url: '/gr/' + id + '/update-delivery-status',
         type: 'POST',
         data: {
             _token: '{{ csrf_token() }}',
@@ -378,7 +378,7 @@ function updateDeliveryStatus(id, status) {
             location.reload();
         },
         error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON.message || 'Failed to update status'));
+            alert('Error: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Failed to update status'));
         }
     });
 }

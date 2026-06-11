@@ -80,8 +80,12 @@ class RbacTest extends TestCase
 
     public function test_admin_can_access_user_management(): void
     {
-        $user = User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))->first();
-        $this->actingAs($user)->get('/users')->assertStatus(200);
+        // Settings are now SuperAdmin-only — Admin should be blocked
+        $user = User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'SuperAdmin'))
+            ->first();
+        $response = $this->actingAs($user)->get('/users');
+        $this->assertContains($response->getStatusCode(), [403, 302]);
     }
 
     public function test_admin_cannot_access_branch_management(): void
@@ -177,24 +181,25 @@ class RbacTest extends TestCase
 
     public function test_admin_can_assign_staff_role(): void
     {
-        $admin = User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))->first();
+        // Settings are SuperAdmin-only now — Admin cannot create users
+        $admin = User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'SuperAdmin'))
+            ->first();
         $staffRole = Role::where('name', 'Staff')->first();
 
         $email = 'staff_test_' . time() . '@test.com';
 
-        $this->actingAs($admin)->post('/users', [
+        $response = $this->actingAs($admin)->post('/users', [
             'name' => 'Test Staff User',
             'email' => $email,
             'password' => 'Password1',
             'password_confirmation' => 'Password1',
             'office' => $admin->office,
             'roles' => [$staffRole->id],
-        ])->assertRedirect(route('users.index'));
+        ]);
 
-        $this->assertNotNull(User::where('email', $email)->first());
-
-        // Cleanup
-        User::where('email', $email)->delete();
+        // Should be blocked (403)
+        $this->assertContains($response->getStatusCode(), [403, 302]);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -203,18 +208,16 @@ class RbacTest extends TestCase
 
     public function test_admin_only_sees_own_branch_users(): void
     {
-        // Pick an admin from a non-Rajkot office
+        // Admin can no longer access /users — SuperAdmin only
         $admin = User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))
-            ->where('office', '!=', 'Rajkot')
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'SuperAdmin'))
             ->first();
 
         if (!$admin) {
-            $this->markTestSkipped('No non-Rajkot Admin user found');
+            $this->markTestSkipped('No Admin user found');
         }
 
         $response = $this->actingAs($admin)->get('/users');
-        $response->assertStatus(200);
-        // Should NOT see users from other offices (e.g. Rajkot SuperAdmin)
-        $response->assertDontSee('admin@sxpress.test');
+        $this->assertContains($response->getStatusCode(), [403, 302]);
     }
 }

@@ -27,6 +27,22 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dash', [App\Http\Controllers\dash\DashboardController::class, 'index'])->name('dash');
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // OFFICE IMPERSONATION (SuperAdmin only)
+    // ═══════════════════════════════════════════════════════════════════════════
+    Route::post('/impersonate-office', function (\Illuminate\Http\Request $request) {
+        if (!auth()->user()->hasRole('SuperAdmin')) abort(403);
+        $office = $request->validate(['office' => 'required|exists:branches,branch_name'])['office'];
+        session(['impersonating_office' => $office]);
+        return redirect()->back()->with('success', "Now working as: {$office}");
+    })->name('impersonate.office');
+
+    Route::post('/stop-impersonating', function () {
+        if (!auth()->user()->hasRole('SuperAdmin')) abort(403);
+        session()->forget('impersonating_office');
+        return redirect()->back()->with('success', 'Switched back to SuperAdmin (all offices).');
+    })->name('impersonate.stop');
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // SUPERADMIN ONLY - Branch management, serial assignment, cross-branch view
     // Per SXPRESS_LOGIC_SKILL section 12
     // ═══════════════════════════════════════════════════════════════════════════
@@ -51,10 +67,10 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // ADMIN+ - Vehicle, Driver, Route, Station, User management
-    // Per SXPRESS_LOGIC_SKILL section 10
+    // SUPERADMIN ONLY - Settings: Vehicle, Driver, Route, Station, User, Roles
+    // Only SuperAdmin can manage settings. Managers/Admins cannot access.
     // ═══════════════════════════════════════════════════════════════════════════
-    Route::middleware(['role:SuperAdmin|Admin'])->group(function () {
+    Route::middleware(['role:SuperAdmin'])->group(function () {
         // Vehicle
         Route::get('/vehicle', [App\Http\Controllers\VehicleController::class, 'index']);
         Route::get('/vehicle/create', [App\Http\Controllers\VehicleController::class, 'create']);
@@ -212,6 +228,9 @@ Route::middleware(['auth'])->group(function () {
     // Autocomplete for GR form
     Route::get('/gr/autocomplete/consignor', [App\Http\Controllers\dash\GrController::class, 'autocompleteConsignor']);
     Route::get('/gr/autocomplete/consignee', [App\Http\Controllers\dash\GrController::class, 'autocompleteConsignee']);
+
+    // GR number preview for office selection (SuperAdmin)
+    Route::get('/gr/next-number/{office}', [App\Http\Controllers\dash\GrController::class, 'nextGrNumber']);
 
     // Route rate lookup for GR form
     Route::get('/route-rate', [App\Http\Controllers\RouteController::class, 'getRate'])->name('route.rate');

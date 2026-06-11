@@ -6,8 +6,8 @@
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
                 <i class="fa fa-bars"></i>
             </button>
-            <a class="navbar-brand" href="./"><img src="{{asset('admin/images/saurashtraf.png')}}" alt="Logo"></a>
-            <a class="navbar-brand hidden" href="./"><img src="{{asset('admin/images/logo2.png')}}" alt="Logo"></a>
+            <a class="navbar-brand" href="{{url('/dash')}}"><img src="{{asset('admin/images/saurashtraf.png')}}" alt="Logo"></a>
+            <a class="navbar-brand hidden" href="{{url('/dash')}}"><img src="{{asset('admin/images/logo2.png')}}" alt="Logo"></a>
         </div>
 
         <div id="main-menu" class="main-menu collapse navbar-collapse">
@@ -40,7 +40,7 @@
                 </li>
                 @endhasanyrole
 
-                {{-- 6. Reports (Manager+) --}}
+                {{-- 6. Reports (Manager+ but scoped to own branch) --}}
                 @hasanyrole('SuperAdmin|Admin|Manager')
                 <li class="menu-item-has-children dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-bar-chart"></i>Reports</a>
@@ -52,23 +52,23 @@
                         <li><i class="fa fa-clock-o"></i><a href="{{ url('/dash/reports/pending-topay') }}">Pending TO-PAY</a></li>
                         <li><i class="fa fa-truck"></i><a href="{{ url('/dash/reports/pending-delivery') }}">Pending Delivery</a></li>
                         <li><i class="fa fa-file-pdf-o"></i><a href="{{ url('/dash/reports/pending-pod') }}">Pending POD</a></li>
+                        @role('SuperAdmin')
                         <li><i class="fa fa-building"></i><a href="{{ url('/dash/reports/branch-performance') }}">Branch Performance</a></li>
+                        @endrole
                     </ul>
                 </li>
                 @endhasanyrole
 
-                {{-- 7. Settings (Admin+) — Masters, Users, Roles --}}
-                @hasanyrole('SuperAdmin|Admin')
+                {{-- 7. Settings (SuperAdmin ONLY) --}}
+                @role('SuperAdmin')
                 <li class="menu-item-has-children dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-cog"></i>Settings</a>
                     <ul class="sub-menu children dropdown-menu">
                         <li><i class="fa fa-user"></i><a href="{{ url('/users') }}">Users</a></li>
                         <li><i class="fa fa-shield"></i><a href="{{ url('/roles') }}">Roles</a></li>
                         <li><i class="fa fa-key"></i><a href="{{ url('/permissions') }}">Permissions</a></li>
-                        @role('SuperAdmin')
                         <li><i class="fa fa-building"></i><a href="{{ url('/branch') }}">Branches</a></li>
                         <li><i class="fa fa-sort-numeric-asc"></i><a href="{{ url('/serial-assign') }}">GR Serial</a></li>
-                        @endrole
                         <li><i class="fa fa-truck"></i><a href="{{ url('/vehicle') }}">Vehicles</a></li>
                         <li><i class="fa fa-id-card"></i><a href="{{ url('/truckdriver') }}">Drivers</a></li>
                         <li><i class="fa fa-road"></i><a href="{{ url('/route') }}">Routes</a></li>
@@ -78,19 +78,7 @@
                         <li><i class="fa fa-download"></i><a href="{{ url('/consignee') }}">Consignees</a></li>
                     </ul>
                 </li>
-                @else
-                {{-- Staff/Manager see limited masters --}}
-                @hasanyrole('Manager|Staff')
-                <li class="menu-item-has-children dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-cog"></i>Settings</a>
-                    <ul class="sub-menu children dropdown-menu">
-                        <li><i class="fa fa-users"></i><a href="{{ url('/customer') }}">Customers</a></li>
-                        <li><i class="fa fa-upload"></i><a href="{{ url('/consignor') }}">Consignors</a></li>
-                        <li><i class="fa fa-download"></i><a href="{{ url('/consignee') }}">Consignees</a></li>
-                    </ul>
-                </li>
-                @endhasanyrole
-                @endhasanyrole
+                @endrole
 
             </ul>
         </div>

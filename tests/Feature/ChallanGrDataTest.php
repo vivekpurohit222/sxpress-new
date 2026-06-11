@@ -56,20 +56,35 @@ class ChallanGrDataTest extends TestCase
 
     public function test_autocomplete_excludes_dispatched_grs(): void
     {
-        $dispatchedGr = Gr::where('status', 'dispatched')->first();
-
-        if (!$dispatchedGr) {
-            $this->markTestSkipped('No dispatched GR exists in DB');
-        }
+        // Create a dispatched GR directly for this test
+        $grNo = 'TEST-DISP-' . rand(10000, 99999);
+        $id = DB::table('grs')->insertGetId([
+            'gr_no' => $grNo,
+            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'copy_date' => now(),
+            'consignor' => 'Disp Test', 'consignor_address' => '', 'consignor_gst_no' => '',
+            'consignee' => 'Disp Recv', 'consignee_address' => '', 'consignee_gst_no' => '',
+            'nugs' => 1, 'meth' => 'Box', 'description' => 'Test',
+            'pm' => '', 'eway_bill_number' => '',
+            'weight' => 10, 'frieght_amount' => 100, 'sur_ch' => 0, 'c_r' => 0,
+            'other' => 0, 'bc_amount' => 0, 'total_amount' => 100,
+            'paid' => 1, 'to_pay' => 0,
+            'office' => 'Rajkot', 'status' => 'dispatched',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
 
         $response = $this->actingAs($this->superAdmin())
-            ->getJson('/gr/autocomplete?q=' . urlencode($dispatchedGr->gr_no));
+            ->getJson('/gr/autocomplete?q=' . urlencode($grNo));
 
         $response->assertStatus(200);
         $data = $response->json();
 
-        $found = collect($data)->firstWhere('gr_no', $dispatchedGr->gr_no);
+        // Dispatched GR should NOT appear in default autocomplete (for challan/gatepass)
+        $found = collect($data)->firstWhere('gr_no', $grNo);
         $this->assertNull($found, 'Dispatched GR should not appear in challan autocomplete');
+
+        // Cleanup
+        DB::table('grs')->where('id', $id)->delete();
     }
 
     public function test_autocomplete_searches_by_consignor(): void

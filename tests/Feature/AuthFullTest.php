@@ -229,15 +229,15 @@ class AuthFullTest extends TestCase
 
     public function test_admin_can_access_user_management(): void
     {
-        // Any user with Admin role
+        // Settings are now SuperAdmin-only. Admin should be blocked.
         $user = User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))->first();
         if (!$user) {
             $this->markTestSkipped('No Admin role user found');
         }
 
         $this->actingAs($user);
-        $this->get('/users')->assertStatus(200);
-        $this->get('/vehicle')->assertStatus(200);
+        $this->get('/users')->assertStatus(403);
+        $this->get('/vehicle')->assertStatus(403);
     }
 
     public function test_staff_cannot_access_admin_routes(): void

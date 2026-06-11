@@ -64,7 +64,7 @@
                                 <div class="alert alert-info mt-2">
                                     <strong><i class="fa fa-check-circle"></i> POD Already Uploaded</strong><br>
                                     <small>Uploaded: {{ $gr->pod_date ? $gr->pod_date->format('d-m-Y') : '-' }}</small><br>
-                                    <a href="{{ Storage::url($gr->pod_file) }}" target="_blank" class="btn btn-sm btn-success mt-1">
+                                    <a href="{{ url('/gr/'.$gr->id.'/pod') }}" target="_blank" class="btn btn-sm btn-success mt-1">
                                         <i class="fa fa-eye"></i> View Current POD
                                     </a>
                                     <p class="mt-1 mb-0"><small class="text-muted">Uploading a new file will replace the existing POD.</small></p>

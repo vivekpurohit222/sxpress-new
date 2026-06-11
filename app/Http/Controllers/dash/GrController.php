@@ -97,13 +97,21 @@ class GrController extends Controller
         }
 
         $office = $user->office;
+
+        // SuperAdmin can create GR for any office — show selector
+        // Other roles always use their own office
+        $branches = [];
+        if ($this->isSuperAdmin()) {
+            $branches = Branch::active()->orderBy('branch_name')->get();
+        }
+
         $newGrNo = $this->generateGrNumber($office);
         $date = Carbon::now()->format('d-m-y');
 
         // Load destinations dynamically from branches table
         $destinations = Branch::active()->orderBy('branch_name')->pluck('branch_name')->all();
 
-        return view('admin.category.copies', compact('newGrNo', 'date', 'user', 'destinations'));
+        return view('admin.category.copies', compact('newGrNo', 'date', 'user', 'destinations', 'branches'));
     }
 
     /**
@@ -123,9 +131,24 @@ class GrController extends Controller
             ]);
         }
 
+        // Determine the office for this GR
+        // SuperAdmin can create for any office via from_dest selection
+        // Other users are locked to their own office
+        if ($this->isSuperAdmin()) {
+            $office = $validated['from_dest'];
+            // Validate the selected office exists
+            if (!Branch::where('branch_name', $office)->exists()) {
+                return back()->withInput()->withErrors(['from_dest' => 'Invalid office selected.']);
+            }
+        } else {
+            $office = auth()->user()->office;
+            // Force from_dest to be the user's own office (prevent tampering)
+            $validated['from_dest'] = $office;
+        }
+
         // Server-side total recalculation — NEVER trust client total
         $validated['total_amount'] = $this->computeTotal($validated);
-        $validated['office'] = auth()->user()->office;
+        $validated['office'] = $office;
         $validated['status'] = 'created';
         $validated['created_by_id'] = auth()->id();
 
@@ -135,8 +158,8 @@ class GrController extends Controller
         $validated['consignor_gst_no'] = $validated['consignor_gst_no'] ?? '';
         $validated['consignee_gst_no'] = $validated['consignee_gst_no'] ?? '';
 
-        // Atomic GR number generation with row locking
-        $validated['gr_no'] = $this->generateGrNumberAtomic($validated['office']);
+        // Atomic GR number generation using the selected office's prefix
+        $validated['gr_no'] = $this->generateGrNumberAtomic($office);
 
         $gr = Gr::create($validated);
 
@@ -144,7 +167,6 @@ class GrController extends Controller
         try {
             event(new GRCreated($gr));
         } catch (\Throwable $e) {
-            // Log but don't fail the request
             \Log::warning('GRCreated event failed: ' . $e->getMessage());
         }
 
@@ -561,6 +583,30 @@ class GrController extends Controller
     // ─────────────────────────────────────────────────────────────────
     // PRIVATE HELPERS
     // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * AJAX: Get next GR number for a given office (SuperAdmin office switching).
+     * GET /gr/next-number/{office}
+     */
+    public function nextGrNumber($office)
+    {
+        if (!$this->isSuperAdmin()) {
+            abort(403);
+        }
+
+        $branch = Branch::where('branch_name', $office)->first();
+        if (!$branch) {
+            return response()->json(['error' => 'Invalid office'], 404);
+        }
+
+        $grNo = $this->generateGrNumber($office);
+
+        return response()->json([
+            'gr_no' => $grNo,
+            'office' => $office,
+            'prefix' => $branch->gr_prefix ?? '??',
+        ]);
+    }
 
     /**
      * Generate GR number with atomic row locking to prevent race conditions.

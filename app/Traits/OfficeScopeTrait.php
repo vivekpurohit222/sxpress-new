@@ -23,21 +23,29 @@ trait OfficeScopeTrait
 {
     /**
      * Apply office scope to a query.
-     * SuperAdmin bypasses the filter (sees all branches).
+     * SuperAdmin bypasses the filter (sees all branches) UNLESS impersonating an office.
      */
     protected function officeScope(Builder $query): Builder
     {
         if (auth()->user()->hasRole('SuperAdmin')) {
+            // If impersonating, scope to impersonated office
+            if ($office = session('impersonating_office')) {
+                return $query->where('office', $office);
+            }
             return $query;
         }
         return $query->where('office', auth()->user()->office);
     }
 
     /**
-     * Return the current user's office name.
+     * Return the current working office.
+     * If SuperAdmin is impersonating, returns the impersonated office.
      */
     protected function currentOffice(): string
     {
+        if (auth()->user()->hasRole('SuperAdmin') && $office = session('impersonating_office')) {
+            return $office;
+        }
         return auth()->user()->office;
     }
 
@@ -47,6 +55,14 @@ trait OfficeScopeTrait
     protected function isSuperAdmin(): bool
     {
         return auth()->user()->hasRole('SuperAdmin');
+    }
+
+    /**
+     * Check if SuperAdmin is currently impersonating an office.
+     */
+    protected function isImpersonating(): bool
+    {
+        return auth()->user()->hasRole('SuperAdmin') && session()->has('impersonating_office');
     }
 
     /**

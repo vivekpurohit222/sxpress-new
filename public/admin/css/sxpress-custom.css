@@ -377,20 +377,48 @@ select.form-control {
 
 /* ─── Left Panel (Navigation) ─── */
 aside.left-panel {
-    width: 230px;
+    width: 220px;
+    padding: 0 15px;
 }
 .navbar .navbar-nav li > a {
     font-size: 13px;
     padding: 8px 0;
+    line-height: 24px;
 }
 .navbar .navbar-nav li > a .menu-icon {
-    width: 35px;
+    width: 30px;
     font-size: 14px;
+    margin-top: 4px;
 }
 .navbar .menu-title {
     font-size: 11px;
     line-height: 30px;
     padding: 8px 0 0 0;
+}
+/* Fix giant arrows in dropdown nav items */
+.navbar .navbar-nav li.menu-item-has-children > a:before {
+    font-size: 12px !important;
+    top: 8px;
+    line-height: 24px;
+}
+.navbar .navbar-nav li.menu-item-has-children .sub-menu {
+    padding: 0 0 0 25px;
+}
+.navbar .navbar-nav li.menu-item-has-children .sub-menu a {
+    font-size: 12px;
+    padding: 4px 0 4px 22px;
+    line-height: 20px;
+}
+.navbar .navbar-nav li.menu-item-has-children .sub-menu i {
+    font-size: 11px;
+    top: 7px;
+}
+.navbar .navbar-brand {
+    min-height: 55px;
+    padding: 8px 0;
+}
+.navbar .navbar-brand img {
+    max-width: 140px;
 }
 
 /* ─── Header (top bar) ─── */
@@ -501,4 +529,117 @@ aside.left-panel {
 }
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* ─── Fix arrows and special characters in tables ─── */
+.table td {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Open Sans', sans-serif;
+}
+
+/* ─── Pagination fix (no giant arrows) ─── */
+.pagination .page-link {
+    font-size: 12px;
+    padding: 4px 10px;
+    line-height: 1.4;
+}
+.pagination .page-item:first-child .page-link,
+.pagination .page-item:last-child .page-link {
+    font-size: 14px;
+}
+
+/* ─── Nav pills / Tabs (GR list filter tabs) ─── */
+.nav-pills .nav-link {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 3px;
+    margin-right: 4px;
+}
+.nav-pills .nav-link.active {
+    background: #4a90d9;
+}
+.nav-pills .nav-link .badge {
+    font-size: 9px;
+    margin-left: 4px;
+}
+
+/* ─── Header menu toggle button fix ─── */
+.menutoggle {
+    height: 35px;
+    width: 35px;
+    line-height: 36px;
+    font-size: 14px;
+    margin: 0 15px 0 0;
+}
+
+/* ─── User dropdown in header ─── */
+.user-area .nav-link {
+    font-size: 13px;
+    padding: 5px 10px;
+}
+
+/* ─── Consistent row/col spacing ─── */
+.row {
+    margin-left: -8px;
+    margin-right: -8px;
+}
+.row > [class*="col-"] {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+/* ─── Summary cards in reports/dashboard ─── */
+.card .card-body.text-center h3,
+.card .card-body.text-center h4,
+.card .card-body.text-center h5 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.card .card-body.text-center small {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.85;
+}
+
+/* ─── List group items (search results) ─── */
+.list-group-item {
+    font-size: 12px;
+    padding: 6px 10px;
+}
+.list-group-item-action:hover {
+    background: #f0f7ff;
+}
+
+/* ─── Form check (checkboxes) ─── */
+.form-check-label {
+    font-size: 12px;
+    text-transform: none;
+    font-weight: 400;
+}
+
+/* ─── Remove number input spinners for cleaner look ─── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* ─── Card tools (branch list header buttons) ─── */
+.card-tools {
+    float: right;
+}
+.card-tools .btn {
+    margin-top: -3px;
+}
+
+/* ─── Container fluid fix ─── */
+.container-fluid {
+    padding: 0;
+}
+section.content {
+    padding: 0;
 }
