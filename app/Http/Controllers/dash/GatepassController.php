@@ -301,12 +301,12 @@ class GatepassController extends Controller
     // ─────────────────────────────────────────────────────────────────
 
     /**
-     * Generate gatepass number — integer sequential per office.
-     * Legacy table uses INT for gp_no.
+     * Generate gatepass number — integer sequential (globally unique).
+     * Legacy table uses INT for gp_no with unique constraint.
      */
     private function generateGatepassNo(string $office): int
     {
-        $last = gatepass::withTrashed()->where('office', $office)->orderByDesc('gp_no')->first();
+        $last = gatepass::withTrashed()->orderByDesc('gp_no')->first();
         return $last ? ($last->gp_no + 1) : 1;
     }
 
@@ -315,8 +315,8 @@ class GatepassController extends Controller
      */
     private function generateGatepassNoAtomic(string $office): int
     {
-        return DB::transaction(function () use ($office) {
-            $last = gatepass::withTrashed()->where('office', $office)
+        return DB::transaction(function () {
+            $last = gatepass::withTrashed()
                 ->lockForUpdate()
                 ->orderByDesc('gp_no')
                 ->first();

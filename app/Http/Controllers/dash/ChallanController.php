@@ -449,7 +449,9 @@ class ChallanController extends Controller
      */
     private function generateChallanNo(string $office): string
     {
-        $last = challan::withTrashed()->where('office', $office)->orderByDesc('id')->first();
+        $last = challan::withTrashed()
+            ->orderByRaw("CAST(SUBSTRING(challan_no, 4) AS UNSIGNED) DESC")
+            ->first();
         $next = $last ? ((int) substr($last->challan_no, 3)) + 1 : 1;
         return 'CH-' . str_pad($next, 5, '0', STR_PAD_LEFT);
     }
@@ -460,9 +462,9 @@ class ChallanController extends Controller
     private function generateChallanNoAtomic(string $office): string
     {
         return DB::transaction(function () use ($office) {
-            $last = challan::withTrashed()->where('office', $office)
+            $last = challan::withTrashed()
                 ->lockForUpdate()
-                ->orderByDesc('id')
+                ->orderByRaw("CAST(SUBSTRING(challan_no, 4) AS UNSIGNED) DESC")
                 ->first();
 
             $next = $last ? ((int) substr($last->challan_no, 3)) + 1 : 1;
