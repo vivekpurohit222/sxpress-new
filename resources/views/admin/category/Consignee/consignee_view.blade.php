@@ -6,8 +6,8 @@
             <div class="card-header">
                 <h3 class="card-title">Consignee Details</h3>
                 <div class="card-tools">
-                    <a href="{{ url('/dash/consignee/'.$consignee->id.'/edit') }}" class="btn btn-primary btn-sm">Edit</a>
-                    <a href="{{ url('/dash/consignee') }}" class="btn btn-default btn-sm">Back</a>
+                    <a href="{{ url('/consignee/'.$consignee->id.'/edit') }}" class="btn btn-primary btn-sm">Edit</a>
+                    <a href="{{ url('/consignee') }}" class="btn btn-default btn-sm">Back</a>
                 </div>
             </div>
             <div class="card-body">

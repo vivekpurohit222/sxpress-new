@@ -109,7 +109,7 @@
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary">Submit</button>
-                    <a href="{{ url('/dash/consignee') }}" class="btn btn-default">Cancel</a>
+                    <a href="{{ url('/consignee') }}" class="btn btn-default">Cancel</a>
                 </div>
             </form>
         </div>

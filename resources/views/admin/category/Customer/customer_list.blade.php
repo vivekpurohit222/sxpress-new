@@ -6,7 +6,7 @@
             <div class="card-header">
                 <h3 class="card-title">Customer List</h3>
                 <div class="card-tools">
-                    <a href="{{ url('/dash/customer/create') }}" class="btn btn-success btn-sm">Add New</a>
+                    <a href="{{ url('/customer/create') }}" class="btn btn-success btn-sm">Add New</a>
                 </div>
             </div>
             @if (session('success'))
@@ -15,7 +15,7 @@
             </div>
             @endif
             <div class="card-body">
-                <form method="GET" action="{{ url('/dash/customer') }}" class="mb-3">
+                <form method="GET" action="{{ url('/customer') }}" class="mb-3">
                     <div class="row">
                         <div class="col-md-4">
                             <input type="text" name="search" class="form-control" placeholder="Search customer..." value="{{ request('search') }}">
@@ -55,9 +55,9 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ url('/dash/customer/'.$customer->id.'/edit') }}" class="btn btn-info btn-sm">Edit</a>
-                                <a href="{{ url('/dash/customer/'.$customer->id) }}" class="btn btn-secondary btn-sm">View</a>
-                                <form method="POST" action="{{ url('/dash/customer/'.$customer->id) }}" style="display:inline;">
+                                <a href="{{ url('/customer/'.$customer->id.'/edit') }}" class="btn btn-info btn-sm">Edit</a>
+                                <a href="{{ url('/customer/'.$customer->id) }}" class="btn btn-secondary btn-sm">View</a>
+                                <form method="POST" action="{{ url('/customer/'.$customer->id) }}" style="display:inline;">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</button>

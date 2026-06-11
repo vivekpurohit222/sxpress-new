@@ -78,6 +78,16 @@
                         <li><i class="fa fa-download"></i><a href="{{ url('/consignee') }}">Consignees</a></li>
                     </ul>
                 </li>
+                @else
+                {{-- Non-SuperAdmin: Masters (Customer, Consignor, Consignee) --}}
+                <li class="menu-item-has-children dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-database"></i>Masters</a>
+                    <ul class="sub-menu children dropdown-menu">
+                        <li><i class="fa fa-users"></i><a href="{{ url('/customer') }}">Customers</a></li>
+                        <li><i class="fa fa-upload"></i><a href="{{ url('/consignor') }}">Consignors</a></li>
+                        <li><i class="fa fa-download"></i><a href="{{ url('/consignee') }}">Consignees</a></li>
+                    </ul>
+                </li>
                 @endrole
 
             </ul>
