@@ -13,7 +13,7 @@
                     <div class="page-title">
                         <ol class="breadcrumb text-right">
                             <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                            <li><a href="{{url('/dash/truckdriver')}}">Truck Driver Details</a></li>
+                            <li><a href="{{url('/truckdriver')}}">Truck Driver Details</a></li>
                             <li class="active">Edit Truck Detail</li>
                         </ol>
                     </div>
@@ -57,7 +57,7 @@
                                           </ul>
                                       </div>
                                   @endif
-                                  <form action="{{url('/dash/truckdriver/'.$id.'/update')}}" method="post" novalidate="novalidate">
+                                  <form action="{{url('/truckdriver/'.$id.'/update')}}" method="post" novalidate="novalidate">
                                     {{csrf_field()}}
 
                                     <input type="hidden" name="_method" value="PATCH"/>
@@ -119,7 +119,7 @@
                                       </div>
                                       </form>
                                       <br>
-                                      <a href="{{ url('/dash/truckdriver') }}" class="btn btn-default">Cancel</a>
+                                      <a href="{{ url('/truckdriver') }}" class="btn btn-default">Cancel</a>
                                         </div>
                                       </div>
                           </div>

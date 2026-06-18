@@ -116,7 +116,7 @@
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary">Submit</button>
-                    <a href="{{ url('/dash/station') }}" class="btn btn-default">Cancel</a>
+                    <a href="{{ url('/station') }}" class="btn btn-default">Cancel</a>
                 </div>
             </form>
         </div>

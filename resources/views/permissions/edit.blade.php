@@ -34,7 +34,7 @@
                     <div class="page-title">
                         <ol class="breadcrumb text-right">
                             <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                            <li><a href="{{url('/dash/permissions')}}"> Available Permissions</a></li>
+                            <li><a href="{{url('/permissions')}}"> Available Permissions</a></li>
 
                             <li class="active">Edit Permission</li>
                         </ol>

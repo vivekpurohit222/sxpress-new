@@ -12,28 +12,24 @@ class GrModuleTest extends TestCase
 {
     private function superAdmin(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'SuperAdmin'))->first();
+        return User::where('role', 'super_admin')->first();
     }
 
     private function admin(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'Admin'))
-            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'SuperAdmin'))
-            ->first();
+        return User::where('role', 'branch_manager')->first();
     }
 
     private function staff(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'Staff'))
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['SuperAdmin', 'Admin', 'Manager']))
-            ->first();
+        return User::where('role', 'agent')->first();
     }
 
     private function validGrData(array $override = []): array
     {
         return array_merge([
             'copy_date'         => now()->format('Y-m-d'),
-            'from_dest'         => 'Rajkot',
+            'from_dest'         => 'Rajkot - PN',
             'to_dest'           => 'Navagam',
             'consignor'         => 'Test Consignor Pvt Ltd',
             'consignor_address' => '123 Industrial Area, Rajkot',
@@ -179,8 +175,8 @@ class GrModuleTest extends TestCase
         // Insert a closed GR directly (bypass observer via DB)
         $id = DB::table('grs')->insertGetId([
             'gr_no' => 'TEST-CLOSED-001',
-            'office' => 'Rajkot',
-            'from_dest' => 'Rajkot',
+            'office' => 'Rajkot - PN',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'copy_date' => now(),
             'consignor' => 'Closed Test',
@@ -250,8 +246,8 @@ class GrModuleTest extends TestCase
     public function test_cannot_delete_dispatched_gr(): void
     {
         $id = DB::table('grs')->insertGetId([
-            'gr_no' => 'TEST-DISP-001', 'office' => 'Rajkot',
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'gr_no' => 'TEST-DISP-001', 'office' => 'Rajkot - PN',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'copy_date' => now(), 'consignor' => 'Disp Test',
             'consignor_address' => 'T', 'consignee' => 'T', 'consignee_address' => 'T',
             'nugs' => 1, 'meth' => 'Bag', 'weight' => 10, 'description' => 'T',
@@ -293,7 +289,7 @@ class GrModuleTest extends TestCase
         // Insert GR for a different office
         $id = DB::table('grs')->insertGetId([
             'gr_no' => 'NV-99999', 'office' => 'Navagam',
-            'from_dest' => 'Navagam', 'to_dest' => 'Rajkot',
+            'from_dest' => 'Navagam', 'to_dest' => 'Rajkot - PN',
             'copy_date' => now(), 'consignor' => 'Other Office',
             'consignor_address' => 'T', 'consignee' => 'T', 'consignee_address' => 'T',
             'nugs' => 1, 'meth' => 'Bag', 'weight' => 10, 'description' => 'T',

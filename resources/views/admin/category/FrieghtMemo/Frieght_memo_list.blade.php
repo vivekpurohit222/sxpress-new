@@ -17,7 +17,7 @@
 
     <div class="card-header">
         <strong>Truck Owner Settlements</strong>
-        @hasanyrole('SuperAdmin|Admin|Manager')
+        @hasanyrole('SuperAdmin|BranchManager')
         <a href="{{ route('frieghtmemo.create') }}" class="btn btn-success btn-sm pull-right"><i class="fa fa-plus"></i> New Freight Memo</a>
         @endhasanyrole
     </div>
@@ -68,7 +68,7 @@
                     <td>
                         <a href="{{ route('frieghtmemo.show', $row->id) }}" class="btn btn-secondary btn-sm" title="View"><i class="fa fa-eye"></i></a>
                         <a href="{{ route('frieghtmemo.print', $row->id) }}" class="btn btn-warning btn-sm" title="Print"><i class="fa fa-print"></i></a>
-                        @hasanyrole('SuperAdmin|Admin')
+                        @hasanyrole('SuperAdmin|BranchManager')
                         <a href="{{ route('frieghtmemo.edit', $row->id) }}" class="btn btn-primary btn-sm" title="Edit"><i class="fa fa-edit"></i></a>
                         <form action="{{ route('frieghtmemo.destroy', $row->id) }}" method="POST" style="display:inline;">@method('DELETE') @csrf
                             <button type="submit" class="btn btn-danger btn-sm" title="Delete" onclick="return confirm('Delete this freight memo?')"><i class="fa fa-trash"></i></button>

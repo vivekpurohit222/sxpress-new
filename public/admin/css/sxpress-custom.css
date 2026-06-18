@@ -544,7 +544,35 @@ aside.left-panel {
 }
 .pagination .page-item:first-child .page-link,
 .pagination .page-item:last-child .page-link {
-    font-size: 14px;
+    font-size: 12px;
+}
+.pagination .page-item .page-link svg {
+    width: 10px;
+    height: 10px;
+}
+/* Laravel default pagination renders SVG arrows - make them small */
+nav[role="navigation"] svg {
+    width: 12px !important;
+    height: 12px !important;
+}
+nav[role="navigation"] .text-sm {
+    font-size: 11px;
+}
+nav[role="navigation"] p.text-sm {
+    font-size: 11px;
+    margin: 0;
+}
+/* Tailwind-style pagination from Laravel (sm:hidden etc) */
+nav[role="navigation"] > div:first-child {
+    font-size: 11px;
+}
+nav[role="navigation"] span[aria-current="page"] span {
+    font-size: 12px;
+    padding: 4px 10px;
+}
+nav[role="navigation"] a {
+    font-size: 12px;
+    padding: 4px 10px;
 }
 
 /* ─── Nav pills / Tabs (GR list filter tabs) ─── */

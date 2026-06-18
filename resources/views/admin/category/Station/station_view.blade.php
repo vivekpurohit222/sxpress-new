@@ -6,8 +6,8 @@
             <div class="card-header">
                 <h3 class="card-title">Station Details</h3>
                 <div class="card-tools">
-                    <a href="{{ url('/dash/station/'.$station->id.'/edit') }}" class="btn btn-primary btn-sm">Edit</a>
-                    <a href="{{ url('/dash/station') }}" class="btn btn-default btn-sm">Back</a>
+                    <a href="{{ url('/station/'.$station->id.'/edit') }}" class="btn btn-primary btn-sm">Edit</a>
+                    <a href="{{ url('/station') }}" class="btn btn-default btn-sm">Back</a>
                 </div>
             </div>
             <div class="card-body">

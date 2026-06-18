@@ -44,7 +44,7 @@
                     <div class="page-title">
                         <ol class="breadcrumb text-right">
                             <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                            <li><a href="{{url('/dash/roles')}}"> Available Roles</a></li>
+                            <li><a href="{{url('/roles')}}"> Available Roles</a></li>
 
                             <li class="active">Create Roles</li>
                         </ol>

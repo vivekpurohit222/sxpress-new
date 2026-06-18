@@ -70,6 +70,11 @@
                                     @include('admin.category.partials.gr_table', ['grs' => $copies->where('to_pay', 1)->where('topay_collected', 1)])
                                 </div>
                             </div>
+
+                            {{-- Pagination --}}
+                            <div class="mt-3">
+                                {{ $copies->withQueryString()->links() }}
+                            </div>
                         </div>
                     </div>
                 </div>

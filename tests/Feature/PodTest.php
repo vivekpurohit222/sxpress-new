@@ -13,21 +13,20 @@ class PodTest extends TestCase
 {
     private function superAdmin(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'SuperAdmin'))->first();
+        return User::where('role', 'super_admin')->first();
     }
 
     private function staff(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'Staff'))
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['SuperAdmin', 'Admin', 'Manager']))
-            ->first();
+        return User::where('role', 'agent')->first();
     }
 
     private function createDispatchedGr(): int
     {
+        $office = $this->staff()->office;
         return DB::table('grs')->insertGetId([
             'gr_no' => 'POD-' . rand(10000, 99999),
-            'office' => 'Rajkot', 'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'office' => $office, 'from_dest' => $office, 'to_dest' => 'Navagam',
             'copy_date' => now(), 'consignor' => 'POD Test Consignor',
             'consignor_address' => 'Test', 'consignee' => 'POD Test Consignee',
             'consignee_address' => 'Test', 'nugs' => 2, 'meth' => 'Box',
@@ -130,7 +129,7 @@ class PodTest extends TestCase
     {
         $grId = DB::table('grs')->insertGetId([
             'gr_no' => 'POD-CRE-' . rand(10000, 99999),
-            'office' => 'Rajkot', 'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'office' => 'Rajkot - PN', 'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'copy_date' => now(), 'consignor' => 'X', 'consignor_address' => 'X',
             'consignee' => 'X', 'consignee_address' => 'X',
             'nugs' => 1, 'meth' => 'Bag', 'weight' => 10, 'description' => 'X',
@@ -192,7 +191,7 @@ class PodTest extends TestCase
         // Create a GR in Navagam
         $grId = DB::table('grs')->insertGetId([
             'gr_no' => 'POD-NV-' . rand(10000, 99999),
-            'office' => 'Navagam', 'from_dest' => 'Navagam', 'to_dest' => 'Rajkot',
+            'office' => 'Navagam', 'from_dest' => 'Navagam', 'to_dest' => 'Rajkot - PN',
             'copy_date' => now(), 'consignor' => 'X', 'consignor_address' => 'X',
             'consignee' => 'X', 'consignee_address' => 'X',
             'nugs' => 1, 'meth' => 'Bag', 'weight' => 10, 'description' => 'X',

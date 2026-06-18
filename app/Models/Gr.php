@@ -56,6 +56,12 @@ class Gr extends Model
         'to_branch_id',
         'consignor_id',
         'consignee_id',
+        'gst_rate',
+        'gst_type',
+        'cgst_amount',
+        'sgst_amount',
+        'igst_amount',
+        'gst_total',
     ];
 
     protected $casts = [
@@ -76,7 +82,20 @@ class Gr extends Model
         'total_amount'         => 'decimal:2',
         'weight'               => 'decimal:3',
         'nugs'                 => 'integer',
+        'gst_rate'             => 'decimal:2',
+        'cgst_amount'          => 'decimal:2',
+        'sgst_amount'          => 'decimal:2',
+        'igst_amount'          => 'decimal:2',
+        'gst_total'            => 'decimal:2',
     ];
+
+    /**
+     * Get the GST entry for this GR (polymorphic)
+     */
+    public function gstEntry()
+    {
+        return $this->morphOne(\App\Models\Accounting\GstEntry::class, 'taxable');
+    }
 
     /**
      * Get the branch this GR was booked from

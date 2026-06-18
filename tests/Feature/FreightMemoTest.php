@@ -18,14 +18,12 @@ class FreightMemoTest extends TestCase
 
     private function superAdmin(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'SuperAdmin'))->first();
+        return User::where('role', 'super_admin')->first();
     }
 
     private function staff(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'Staff'))
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['SuperAdmin', 'Admin', 'Manager']))
-            ->first();
+        return User::where('role', 'agent')->first();
     }
 
     private function getVehicleId(): int
@@ -51,8 +49,8 @@ class FreightMemoTest extends TestCase
         $this->actingAs($this->superAdmin())
             ->get(route('frieghtmemo.create'))
             ->assertStatus(200)
-            ->assertSee('Truck Freight')
-            ->assertSee('Commission')
+            ->assertSee('Total Lorry Hire')
+            ->assertSee('Advance Paid')
             ->assertSee('Balance Payable');
     }
 
@@ -66,21 +64,16 @@ class FreightMemoTest extends TestCase
     {
         $this->actingAs($this->superAdmin())->post(route('frieghtmemo.store'), [
             'fm_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'truck_no' => 'GJ-03-AB-1234',
             'truck_freight' => 15000,
+            'advance' => 5000,
             'commission' => 1500,
-            'entry_1' => 'Loading/Hamali',
-            'entry_1_amount' => 500,
-            'entry_2' => 'Unloading',
-            'entry_2_amount' => 400,
-            'entry_3' => '',
-            'entry_3_amount' => 0,
-            'entry_4' => 'Advance to Driver',
-            'entry_4_amount' => 5000,
+            'hamali' => 500,
+            'detention' => 400,
+            'tds' => 0,
             'other_charges' => 200,
-            'extra' => 0,
             'note' => 'Trip completed on time',
         ])->assertRedirect(route('frieghtmemo.index'));
 
@@ -88,7 +81,7 @@ class FreightMemoTest extends TestCase
         $this->assertNotNull($fm);
         $this->assertEquals(15000, (float) $fm->truck_freight);
         $this->assertEquals(1500, (float) $fm->commission);
-        // Balance = 15000 - 1500 - 500 - 400 - 0 - 5000 - 200 - 0 = 7400
+        // Balance = 15000 - 5000 - 1500 - 500 - 400 - 0 - 200 = 7400
         $this->assertEquals(7400, (float) $fm->balance_due);
 
         $fm->forceDelete();
@@ -98,21 +91,20 @@ class FreightMemoTest extends TestCase
     {
         $this->actingAs($this->superAdmin())->post(route('frieghtmemo.store'), [
             'fm_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'truck_no' => 'GJ-03-AB-5678',
             'truck_freight' => 20000,
+            'advance' => 0,
             'commission' => 2000,
-            'entry_1' => 'Loading', 'entry_1_amount' => 1000,
-            'entry_2' => '', 'entry_2_amount' => 0,
-            'entry_3' => '', 'entry_3_amount' => 0,
-            'entry_4' => '', 'entry_4_amount' => 0,
+            'hamali' => 1000,
+            'detention' => 0,
+            'tds' => 0,
             'other_charges' => 500,
-            'extra' => 300,
         ]);
 
         $fm = Freight::orderByDesc('id')->first();
-        // Balance = 20000 - 2000 - 1000 - 0 - 0 - 0 - 500 - 300 = 16200
-        $this->assertEquals(16200, (float) $fm->balance_due);
+        // Balance = 20000 - 0 - 2000 - 1000 - 0 - 0 - 500 = 16500
+        $this->assertEquals(16500, (float) $fm->balance_due);
 
         $fm->forceDelete();
     }
@@ -121,10 +113,10 @@ class FreightMemoTest extends TestCase
     {
         $id = DB::table('frieghts')->insertGetId([
             'fm_no' => 'TEST-EDIT', 'fm_date' => now(),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'truck_no' => 'GJ-03-AB-1234', 'truck_freight' => 10000,
             'commission' => 1000, 'balance_due' => 9000,
-            'office' => 'Rajkot', 'memo_no' => '', 'consignor' => '', 'consignee' => '',
+            'office' => 'Rajkot - PN', 'memo_no' => '', 'consignor' => '', 'consignee' => '',
             'note' => '', 'created_at' => now(), 'updated_at' => now(),
         ]);
 
@@ -140,9 +132,9 @@ class FreightMemoTest extends TestCase
     {
         $id = DB::table('frieghts')->insertGetId([
             'fm_no' => 'TEST-DEL', 'fm_date' => now(),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'truck_no' => 'GJ-03-AB-1234', 'truck_freight' => 5000,
-            'balance_due' => 5000, 'office' => 'Rajkot',
+            'balance_due' => 5000, 'office' => 'Rajkot - PN',
             'memo_no' => '', 'consignor' => '', 'consignee' => '', 'note' => '',
             'created_at' => now(), 'updated_at' => now(),
         ]);
@@ -158,11 +150,11 @@ class FreightMemoTest extends TestCase
     {
         $id = DB::table('frieghts')->insertGetId([
             'fm_no' => 'TEST-PRT', 'fm_date' => now(),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'truck_no' => 'GJ-03-AB-1234', 'truck_freight' => 12000,
             'commission' => 1200, 'balance_due' => 10800,
             'entry_1' => 'Loading', 'entry_1_amount' => 0,
-            'office' => 'Rajkot', 'memo_no' => '', 'consignor' => '', 'consignee' => '', 'note' => '',
+            'office' => 'Rajkot - PN', 'memo_no' => '', 'consignor' => '', 'consignee' => '', 'note' => '',
             'created_at' => now(), 'updated_at' => now(),
         ]);
 

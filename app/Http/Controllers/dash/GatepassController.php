@@ -81,8 +81,8 @@ class GatepassController extends Controller
         $preSelectedGr = null;
         if ($grNo = $request->get('gr_no')) {
             $preSelectedGr = Gr::where('gr_no', $grNo)
-                ->where('office', $office)
-                ->where('status', 'created')
+                ->where('to_dest', $office)
+                ->where('status', 'in_transit')
                 ->first();
         }
 
@@ -115,15 +115,15 @@ class GatepassController extends Controller
             'driver_id.required' => 'Please select a driver.',
         ]);
 
-        // Validate all selected GRs belong to current office and are in 'created' status
+        // Validate all selected GRs are in_transit and destined for current office
         $grs = Gr::whereIn('id', $validated['gr_ids'])
-                  ->where('office', $this->currentOffice())
-                  ->where('status', 'created')
+                  ->where('to_dest', $this->currentOffice())
+                  ->where('status', 'in_transit')
                   ->get();
 
         if ($grs->count() !== count($validated['gr_ids'])) {
             return back()->withInput()->withErrors([
-                'gr_ids' => 'One or more selected GRs are invalid, belong to another office, or are already dispatched.'
+                'gr_ids' => 'One or more selected GRs are invalid, not destined for this office, or are not in transit.'
             ]);
         }
 
@@ -149,23 +149,22 @@ class GatepassController extends Controller
             'total_amount'   => $grs->sum('total_amount'),
         ]);
 
-        // Link GRs via pivot table and auto-transition each to 'dispatched'
+        // Link GRs via pivot table and mark each as 'delivered'
         foreach ($grs as $gr) {
             $gatepass->grs()->attach($gr->id, ['gr_no' => $gr->gr_no]);
         }
 
         foreach ($grs as $gr) {
-            $this->workflow->transition($gr, 'dispatched', auth()->user());
-            // Fire GRDispatched event (non-blocking)
-            try {
-                event(new GRDispatched($gr));
-            } catch (\Throwable $e) {
-                \Log::warning('GRDispatched event failed: ' . $e->getMessage());
-            }
+            $gr->update([
+                'status'            => 'delivered',
+                'status_updated_at' => now(),
+                'status_updated_by' => auth()->id(),
+                'delivered_at'      => now(),
+            ]);
         }
 
         return redirect()->route('gatepass.index')
-            ->with('success', "Gatepass {$gatepass->gp_no} created for {$grs->count()} GR(s). GR(s) marked as Dispatched.");
+            ->with('success', "Gatepass {$gatepass->gp_no} created for {$grs->count()} GR(s). GR(s) marked as Delivered.");
     }
 
     /**
@@ -193,7 +192,7 @@ class GatepassController extends Controller
             abort(403);
         }
 
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403, 'Only Manager or higher can edit a gatepass.');
         }
 
@@ -214,7 +213,7 @@ class GatepassController extends Controller
             abort(403);
         }
 
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403);
         }
 
@@ -248,7 +247,7 @@ class GatepassController extends Controller
     {
         $gp = gatepass::findOrFail($id);
 
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403);
         }
         if (!$this->isSuperAdmin() && $gp->office !== $this->currentOffice()) {

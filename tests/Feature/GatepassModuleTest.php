@@ -14,22 +14,20 @@ class GatepassModuleTest extends TestCase
 {
     private function superAdmin(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'SuperAdmin'))->first();
+        return User::where('role', 'super_admin')->first();
     }
 
     private function staff(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'Staff'))
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['SuperAdmin', 'Admin', 'Manager']))
-            ->first();
+        return User::where('role', 'agent')->first();
     }
 
     private function createTestGr(string $suffix = ''): int
     {
         return DB::table('grs')->insertGetId([
             'gr_no' => 'T-' . rand(10000, 99999) . $suffix,
-            'office' => 'Rajkot',
-            'from_dest' => 'Rajkot',
+            'office' => 'Rajkot - PN',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'copy_date' => now(),
             'consignor' => 'Test Consignor' . $suffix,
@@ -112,7 +110,7 @@ class GatepassModuleTest extends TestCase
 
         $response = $this->actingAs($this->staff())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'gr_ids' => [$grId1, $grId2],
             'vehicle_id' => $vehicleId,
@@ -144,7 +142,7 @@ class GatepassModuleTest extends TestCase
 
         $this->actingAs($this->staff())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'gr_ids' => [$grId],
             'vehicle_id' => $this->getVehicleId(),
@@ -158,7 +156,7 @@ class GatepassModuleTest extends TestCase
     {
         $this->actingAs($this->staff())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'gr_ids' => [],
             'vehicle_id' => $this->getVehicleId(),
@@ -178,7 +176,7 @@ class GatepassModuleTest extends TestCase
 
         $this->actingAs($this->superAdmin())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'gr_ids' => [$grId],
             'vehicle_id' => $vehicleId, 'driver_id' => $driverId,
         ]);
@@ -208,7 +206,7 @@ class GatepassModuleTest extends TestCase
 
         $this->actingAs($this->superAdmin())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'gr_ids' => [$grId],
             'vehicle_id' => $vehicleId, 'driver_id' => $driverId,
         ]);
@@ -266,7 +264,7 @@ class GatepassModuleTest extends TestCase
         // Insert a GR for Navagam office
         $grId = DB::table('grs')->insertGetId([
             'gr_no' => 'NV-OTHER-' . time(), 'office' => 'Navagam',
-            'from_dest' => 'Navagam', 'to_dest' => 'Rajkot',
+            'from_dest' => 'Navagam', 'to_dest' => 'Rajkot - PN',
             'copy_date' => now(), 'consignor' => 'X', 'consignor_address' => 'X',
             'consignee' => 'X', 'consignee_address' => 'X',
             'nugs' => 1, 'meth' => 'Bag', 'weight' => 10, 'description' => 'X',
@@ -279,7 +277,7 @@ class GatepassModuleTest extends TestCase
         // Rajkot staff tries to dispatch a Navagam GR
         $this->actingAs($this->staff())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'gr_ids' => [$grId],
             'vehicle_id' => $this->getVehicleId(), 'driver_id' => $this->getDriverId(),
         ])->assertSessionHasErrors('gr_ids');

@@ -10,6 +10,7 @@ use App\Listeners\SendGRCreatedNotification;
 use App\Listeners\SendGRDeliveredNotification;
 use App\Listeners\SendGRDispatchedNotification;
 use App\Listeners\SendPODUploadedNotification;
+use App\Listeners\CreateGrAccountingEntry;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -30,6 +31,7 @@ class EventServiceProvider extends ServiceProvider
         // GR Events - Per SXPRESS_PHASE_11
         GRCreated::class => [
             SendGRCreatedNotification::class,
+            // CreateGrAccountingEntry::class, // SUPPRESSED — accounting module disabled
         ],
         GRDispatched::class => [
             SendGRDispatchedNotification::class,

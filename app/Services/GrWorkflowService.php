@@ -13,9 +13,9 @@ use Exception;
  * SXPRESS_LOGIC_SKILL section 3.
  *
  * State flow:
- *   [created] ──→ [dispatched] ──→ [in_transit] ──→ [delivered] ──→ [closed]
- *        ↓               ↓
- *   [cancelled]      [cancelled]    (Admin+ only)
+ *   [created] ──→ [loaded] ──→ [in_transit] ──→ [delivered] ──→ [closed]
+ *        ↓            ↓
+ *   [cancelled]  [cancelled]    (Admin+ only)
  */
 class GrWorkflowService
 {
@@ -24,7 +24,8 @@ class GrWorkflowService
      * Key = current state, Value = allowed next states.
      */
     private array $transitions = [
-        'created'    => ['dispatched', 'cancelled'],
+        'created'    => ['loaded', 'dispatched', 'cancelled'],
+        'loaded'     => ['in_transit', 'cancelled'],
         'dispatched' => ['in_transit', 'cancelled'],
         'in_transit' => ['delivered'],
         'delivered'  => ['closed'],
@@ -74,6 +75,7 @@ class GrWorkflowService
     {
         return match ($status) {
             'created'    => 'bg-secondary',
+            'loaded'     => 'bg-info',
             'dispatched' => 'bg-primary',
             'in_transit' => 'bg-warning text-dark',
             'delivered'  => 'bg-info',
@@ -90,6 +92,7 @@ class GrWorkflowService
     {
         return match ($status) {
             'created'    => 'Created',
+            'loaded'     => 'Loaded',
             'dispatched' => 'Dispatched',
             'in_transit' => 'In Transit',
             'delivered'  => 'Delivered',

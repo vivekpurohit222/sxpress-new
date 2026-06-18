@@ -37,12 +37,12 @@
                         @endif
                         <div class="card-header">
                             <strong class="card-title">Truck Driver Details</strong>
-                            <a href="{{ url('/dash/truckdriver/create') }}" class="btn btn-primary pull-right">
+                            <a href="{{ url('/truckdriver/create') }}" class="btn btn-primary pull-right">
                                 Add Truck Details
                             </a>
                         </div>
                         <div class="card-body">
-                            <form method="GET" action="{{ url('/dash/truckdriver') }}" class="mb-3">
+                            <form method="GET" action="{{ url('/truckdriver') }}" class="mb-3">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <input type="text" name="search" class="form-control" placeholder="Search truck driver..." value="{{ request('search') }}">
@@ -83,9 +83,9 @@
                             @endif
                         </td>
                         <td>
-                        <a href="{{url('/dash/truckdriver/'.$row->id.'/edit')}}" class="btn btn-primary btn-sm">Edit</a>
-                        <a href="{{url('/dash/truckdriver/'.$row->id.'/view')}}" class="btn btn-info btn-sm">View</a>
-                            <form action="{{url('/dash/truckdriver/'.$row->id.'/delete')}}" method="POST" style="display:inline;">
+                        <a href="{{url('/truckdriver/'.$row->id.'/edit')}}" class="btn btn-primary btn-sm">Edit</a>
+                        <a href="{{url('/truckdriver/'.$row->id.'/view')}}" class="btn btn-info btn-sm">View</a>
+                            <form action="{{url('/truckdriver/'.$row->id.'/delete')}}" method="POST" style="display:inline;">
                                @method('DELETE')
                                  {{ csrf_field() }}
                                  <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</button>

@@ -70,19 +70,19 @@ class UserSeeder extends Seeder
 
         $now = now();
 
-        // 1. Super-admin — a single user with the Super Admin role.
+        // 1. Super-admin — a single user with the SuperAdmin role.
         $this->upsertUser([
             'name'     => 'Super Admin',
             'email'    => 'admin@sxpress.test',
             'password' => 'password',
-            'office'   => 'Rajkot',
+            'office'   => optional($branches->get('RJKT'))->name ?? 'Rajkot - PN',
             'phone'    => '+919999900001',
             'is_active'=> true,
             'email_verified_at' => $now,
             'branch_id'=> optional($branches->get('RJKT'))->id,
-        ], 'Super Admin');
+        ], 'SuperAdmin');
 
-        // 2. One Branch Manager per office.
+        // 2. One BranchManager per office.
         if ($branches->isNotEmpty()) {
             $managers = [
                 'RJKT' => 'Rajesh Patel',
@@ -105,23 +105,23 @@ class UserSeeder extends Seeder
                     'is_active'=> true,
                     'email_verified_at' => $now,
                     'branch_id'=> $branch->id,
-                ], 'Branch Manager');
+                ], 'BranchManager');
             }
         }
 
-        // 3. Five generic operators — used to populate GR/challan
+        // 3. Five Agent users — used to populate GR/challan
         //    `created_by_id` audit columns with realistic data.
         for ($i = 1; $i <= 5; $i++) {
             $this->upsertUser([
-                'name'     => "Operator $i",
-                'email'    => "operator{$i}@sxpress.test",
+                'name'     => "Agent $i",
+                'email'    => "agent{$i}@sxpress.test",
                 'password' => 'password',
                 'office'   => optional($branches->get('RJKT'))->name ?? 'Rajkot',
                 'phone'    => $this->randomIndianPhone(),
                 'is_active'=> true,
                 'email_verified_at' => $now,
                 'branch_id'=> optional($branches->get('RJKT'))->id,
-            ], 'Operator');
+            ], 'Agent');
         }
 
         $this->command?->info('[UserSeeder] Demo users created (password: "password" for all).');

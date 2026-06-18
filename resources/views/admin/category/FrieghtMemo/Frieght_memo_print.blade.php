@@ -49,35 +49,39 @@
         </tr>
     </table>
 
-    {{-- Charge Entries --}}
+    {{-- Settlement Breakdown --}}
     <table class="charges">
         <thead>
             <tr><th width="5%">Sr.</th><th>Particulars</th><th width="25%">Amount (₹)</th></tr>
         </thead>
         <tbody>
-            @if($freight->entry_1)
-            <tr><td>1</td><td>{{ $freight->entry_1 }}</td><td style="text-align:right">{{ number_format($freight->entry_1_amount ?? 0, 2) }}</td></tr>
+            <tr style="background:#eef"><td></td><td><strong>Total Lorry Hire (Agreed Freight)</strong></td><td style="text-align:right"><strong>{{ number_format($freight->truck_freight ?? 0, 2) }}</strong></td></tr>
+            @if(($freight->entry_1_amount ?? 0) > 0)
+            <tr><td>1</td><td>Less: {{ $freight->entry_1 ?: 'Advance Paid' }}</td><td style="text-align:right">− {{ number_format($freight->entry_1_amount, 2) }}</td></tr>
             @endif
-            @if($freight->entry_2)
-            <tr><td>2</td><td>{{ $freight->entry_2 }}</td><td style="text-align:right">{{ number_format($freight->entry_2_amount ?? 0, 2) }}</td></tr>
+            @if(($freight->commission ?? 0) > 0)
+            <tr><td>2</td><td>Less: Broker Commission</td><td style="text-align:right">− {{ number_format($freight->commission, 2) }}</td></tr>
             @endif
-            @if($freight->entry_3)
-            <tr><td>3</td><td>{{ $freight->entry_3 }}</td><td style="text-align:right">{{ number_format($freight->entry_3_amount ?? 0, 2) }}</td></tr>
+            @if(($freight->entry_2_amount ?? 0) > 0)
+            <tr><td>3</td><td>Less: {{ $freight->entry_2 ?: 'Hamali' }}</td><td style="text-align:right">− {{ number_format($freight->entry_2_amount, 2) }}</td></tr>
             @endif
-            @if($freight->entry_4)
-            <tr><td>4</td><td>{{ $freight->entry_4 }}</td><td style="text-align:right">{{ number_format($freight->entry_4_amount ?? 0, 2) }}</td></tr>
+            @if(($freight->entry_3_amount ?? 0) > 0)
+            <tr><td>4</td><td>Less: {{ $freight->entry_3 ?: 'Detention' }}</td><td style="text-align:right">− {{ number_format($freight->entry_3_amount, 2) }}</td></tr>
             @endif
-            <tr style="background:#f9f9f9"><td colspan="2"><strong>Total Entries</strong></td><td style="text-align:right"><strong>₹ {{ number_format($freight->total_amount ?? 0, 2) }}</strong></td></tr>
+            @if(($freight->entry_4_amount ?? 0) > 0)
+            <tr><td>5</td><td>Less: {{ $freight->entry_4 ?: 'TDS' }}</td><td style="text-align:right">− {{ number_format($freight->entry_4_amount, 2) }}</td></tr>
+            @endif
+            @if(($freight->other_charges ?? 0) > 0)
+            <tr><td>6</td><td>Less: Other Deductions</td><td style="text-align:right">− {{ number_format($freight->other_charges, 2) }}</td></tr>
+            @endif
         </tbody>
     </table>
 
     {{-- Settlement Box --}}
     <div class="settlement">
         <table width="100%">
-            <tr><td>Truck Freight (Hire):</td><td style="text-align:right">₹ {{ number_format($freight->truck_freight ?? 0, 2) }}</td></tr>
-            <tr><td>Less: Commission:</td><td style="text-align:right">₹ {{ number_format($freight->commission ?? 0, 2) }}</td></tr>
-            <tr><td>Less: Other Charges:</td><td style="text-align:right">₹ {{ number_format($freight->other_charges ?? 0, 2) }}</td></tr>
-            <tr><td>Less: Extra:</td><td style="text-align:right">₹ {{ number_format($freight->extra ?? 0, 2) }}</td></tr>
+            <tr><td>Total Lorry Hire:</td><td style="text-align:right">₹ {{ number_format($freight->truck_freight ?? 0, 2) }}</td></tr>
+            <tr><td>Total Deductions:</td><td style="text-align:right">− ₹ {{ number_format(($freight->truck_freight ?? 0) - ($freight->balance_due ?? 0), 2) }}</td></tr>
             <tr class="total"><td><strong>Balance Payable to Owner:</strong></td><td style="text-align:right"><strong>₹ {{ number_format($freight->balance_due ?? 0, 2) }}</strong></td></tr>
         </table>
     </div>

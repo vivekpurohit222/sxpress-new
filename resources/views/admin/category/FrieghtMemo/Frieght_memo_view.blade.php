@@ -5,7 +5,7 @@
         <strong>Freight Memo — {{ $freight->fm_no }}</strong>
         <div class="float-right">
             <a href="{{ route('frieghtmemo.print', $id) }}" class="btn btn-secondary btn-sm"><i class="fa fa-print"></i> Print</a>
-            @hasanyrole('SuperAdmin|Admin')
+            @hasanyrole('SuperAdmin|BranchManager')
             <a href="{{ route('frieghtmemo.edit', $id) }}" class="btn btn-primary btn-sm"><i class="fa fa-edit"></i> Edit</a>
             @endhasanyrole
             <a href="{{ route('frieghtmemo.index') }}" class="btn btn-info btn-sm"><i class="fa fa-arrow-left"></i> Back</a>

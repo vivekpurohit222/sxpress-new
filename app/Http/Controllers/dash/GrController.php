@@ -205,7 +205,7 @@ class GrController extends Controller
 
         // After dispatch, only Admin+ can edit
         if (in_array($gr->status, ['dispatched', 'in_transit', 'delivered', 'closed'])
-            && !Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+            && !Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403, 'GR has been dispatched. Only Admin can edit.');
         }
 
@@ -215,7 +215,7 @@ class GrController extends Controller
         }
 
         // Staff can only edit GRs they created (when status = created)
-        if (Auth::user()->hasRole('Staff') && $gr->status === 'created') {
+        if (Auth::user()->hasRole('Agent') && $gr->status === 'created') {
             if ($gr->created_by_id && $gr->created_by_id !== auth()->id()) {
                 abort(403, 'You can only edit GRs you created.');
             }
@@ -241,7 +241,7 @@ class GrController extends Controller
 
         // After dispatch, only Admin+ can edit
         if (in_array($gr->status, ['dispatched', 'in_transit', 'delivered', 'closed'])
-            && !Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+            && !Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403, 'GR has been dispatched. Only Admin can edit.');
         }
 
@@ -251,7 +251,7 @@ class GrController extends Controller
         }
 
         // Staff ownership check
-        if (Auth::user()->hasRole('Staff') && $gr->status === 'created') {
+        if (Auth::user()->hasRole('Agent') && $gr->status === 'created') {
             if ($gr->created_by_id && $gr->created_by_id !== auth()->id()) {
                 abort(403, 'You can only edit GRs you created.');
             }
@@ -290,7 +290,7 @@ class GrController extends Controller
     {
         $gr = Gr::findOrFail($id);
 
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403);
         }
         if (!$this->isSuperAdmin() && $gr->office !== $this->currentOffice()) {
@@ -321,11 +321,17 @@ class GrController extends Controller
         $query = Gr::query();
         $this->officeScope($query);
 
-        // For freight memo — return delivered/dispatched/in_transit GRs
-        if ($request->get('for') === 'freight') {
+        // Filter by purpose
+        $for = $request->get('for');
+        if ($for === 'freight') {
+            // For freight memo — return delivered/dispatched/in_transit GRs
             $query->whereIn('status', ['delivered', 'dispatched', 'in_transit']);
+        } elseif ($for === 'gatepass') {
+            // For gatepass — return only in_transit GRs at destination office
+            $query->where('status', 'in_transit')
+                  ->where('to_dest', $this->currentOffice());
         } else {
-            // Default: only un-dispatched GRs (for Gatepass/Challan)
+            // Default (for Challan) — only 'created' GRs not yet loaded
             $query->where('status', 'created');
         }
 
@@ -557,6 +563,13 @@ class GrController extends Controller
             'topay_collected_by'   => auth()->id(),
         ]);
 
+        // Create accounting entry for TO-PAY collection (Phase 8 integration)
+        try {
+            \App\Listeners\CreateTopayCollectionEntry::handle($gr);
+        } catch (\Throwable $e) {
+            \Log::warning('Accounting TO-PAY entry failed: ' . $e->getMessage());
+        }
+
         return response()->json(['success' => true, 'message' => 'TO-PAY marked as collected.']);
     }
 
@@ -565,7 +578,7 @@ class GrController extends Controller
         $gr = Gr::findOrFail($id);
 
         // Only Admin+ can undo a TO-PAY collection
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403, 'Only Admin or SuperAdmin can undo a TO-PAY collection.');
         }
 

@@ -6,7 +6,7 @@
             <div class="card-header">
                 <h3 class="card-title">Station List</h3>
                 <div class="card-tools">
-                    <a href="{{ url('/dash/station/create') }}" class="btn btn-success btn-sm">Add New</a>
+                    <a href="{{ url('/station/create') }}" class="btn btn-success btn-sm">Add New</a>
                 </div>
             </div>
             @if (session('success'))
@@ -15,7 +15,7 @@
             </div>
             @endif
             <div class="card-body">
-                <form method="GET" action="{{ url('/dash/station') }}" class="mb-3">
+                <form method="GET" action="{{ url('/station') }}" class="mb-3">
                     <div class="row">
                         <div class="col-md-4">
                             <input type="text" name="search" class="form-control" placeholder="Search station..." value="{{ request('search') }}">
@@ -61,9 +61,9 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ url('/dash/station/'.$station->id.'/edit') }}" class="btn btn-info btn-sm">Edit</a>
-                                <a href="{{ url('/dash/station/'.$station->id) }}" class="btn btn-secondary btn-sm">View</a>
-                                <form method="POST" action="{{ url('/dash/station/'.$station->id) }}" style="display:inline;">
+                                <a href="{{ url('/station/'.$station->id.'/edit') }}" class="btn btn-info btn-sm">Edit</a>
+                                <a href="{{ url('/station/'.$station->id) }}" class="btn btn-secondary btn-sm">View</a>
+                                <form method="POST" action="{{ url('/station/'.$station->id) }}" style="display:inline;">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</button>

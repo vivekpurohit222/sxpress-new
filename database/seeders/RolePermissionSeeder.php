@@ -8,8 +8,12 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 /**
- * Simplified Role & Permission Seeder.
- * 5 roles, 10 permissions.
+ * Role & Permission Seeder.
+ *
+ * 3 Roles:
+ *  - SuperAdmin   → Full system access (accounting, settings, all branches, user management)
+ *  - BranchManager → Operational access scoped to own branch (GR, Gatepass, Challan, Freight Memo, Reports, POD)
+ *  - Agent        → Day-to-day booking scoped to own branch (GR, Gatepass, Challan, POD)
  */
 class RolePermissionSeeder extends Seeder
 {
@@ -22,8 +26,8 @@ class RolePermissionSeeder extends Seeder
 
         app()['cache']->forget('spatie.permission.cache');
 
-        // 5 Roles
-        foreach (['SuperAdmin', 'Admin', 'Manager', 'Staff', 'Viewer'] as $r) {
+        // 3 Roles
+        foreach (['SuperAdmin', 'BranchManager', 'Agent'] as $r) {
             Role::firstOrCreate(['name' => $r, 'guard_name' => 'web']);
         }
 
@@ -45,29 +49,20 @@ class RolePermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
         }
 
-        // SuperAdmin: all
+        // SuperAdmin: all permissions
         Role::findByName('SuperAdmin')->syncPermissions(Permission::all());
 
-        // Admin: operational + users
-        Role::findByName('Admin')->syncPermissions([
-            'manage-gr', 'manage-gatepass', 'manage-challan', 'manage-freight',
-            'manage-masters', 'manage-users', 'view-reports', 'manage-pod',
-        ]);
-
-        // Manager: operational
-        Role::findByName('Manager')->syncPermissions([
+        // BranchManager: operational + reports (scoped to branch via OfficeScopeTrait)
+        Role::findByName('BranchManager')->syncPermissions([
             'manage-gr', 'manage-gatepass', 'manage-challan', 'manage-freight',
             'view-reports', 'manage-pod',
         ]);
 
-        // Staff: day-to-day
-        Role::findByName('Staff')->syncPermissions([
+        // Agent: day-to-day booking only
+        Role::findByName('Agent')->syncPermissions([
             'manage-gr', 'manage-gatepass', 'manage-challan', 'manage-pod',
         ]);
 
-        // Viewer: no permissions (read-only via role middleware)
-        Role::findByName('Viewer')->syncPermissions([]);
-
-        $this->command?->info('[RolePermissionSeeder] Done. 5 roles, ' . count($permissions) . ' permissions.');
+        $this->command?->info('[RolePermissionSeeder] Done. 3 roles, ' . count($permissions) . ' permissions.');
     }
 }

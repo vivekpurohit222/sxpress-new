@@ -1,204 +1,173 @@
-# SXpress — Transport & Logistics ERP
+# Saurashtra Express — Transport ERP
 
-**Saurashtra Express (SXpress)** is a full-featured transport management system built for Indian truck transport companies. It manages the complete goods movement lifecycle — from booking (GR) to delivery (POD) to truck owner settlement (Freight Memo) — across multiple branch offices.
+A Laravel 10 ERP system for **Saurashtra Express**, a transport logistics company operating across multiple branches in Gujarat, India.
 
----
-
-## Features
-
-### Core Modules
-- **GR (Goods Receipt / Bilty)** — Consignment booking with auto-numbering per branch prefix
-- **Gatepass** — Authorizes goods dispatch, links multiple GRs
-- **Challan (Delivery Challan)** — Truck trip manifest with GR items auto-populated
-- **Freight Memo** — Truck owner settlement linked to Challan (Indian transport standard)
-- **POD (Proof of Delivery)** — File upload with auto status transition
-- **TO-PAY Collection** — Track and collect pending payments with aging
-
-### Operations
-- **Dashboard** — Real-time KPIs, charts (revenue trend, status distribution, weekly comparison)
-- **Reports** — GR Register, Daily Booking, Revenue, Pending TO-PAY, Pending Delivery, Pending POD, Branch Performance, Vehicle, Driver — all with CSV export
-- **Office Impersonation** — SuperAdmin can work as any branch with one click
-- **Public Tracking** — Track shipment by GR number without login
-
-### Administration
-- **Multi-Branch** — 7 offices with independent GR serial numbering
-- **Role-Based Access** — SuperAdmin, Admin, Manager, Staff, Viewer
-- **User Management** — Soft-delete, activate/deactivate, branch assignment
-- **Branch Management** — GR prefix lock, deletion guards, rename cascade
-
----
-
-## Tech Stack
-
-| Component | Version |
-|-----------|---------|
-| Framework | Laravel 10.50.2 |
-| PHP | 8.2 |
-| Database | MariaDB 10.4 / MySQL 8 |
-| Frontend | Bootstrap 4 + Chart.js |
-| Auth | Spatie Laravel Permission |
-| Admin Template | Sufee Admin |
-
----
-
-## Installation
-
-```bash
-# Clone
-git clone https://github.com/vivekpurohit222/sxpress-new.git
-cd sxpress-new
-
-# Install dependencies
-composer install
-npm install
-
-# Environment
-cp .env.example .env
-php artisan key:generate
-
-# Configure database in .env
-DB_DATABASE=sxpress
-DB_USERNAME=root
-DB_PASSWORD=
-
-# Run migrations
-php artisan migrate
-
-# Seed roles, permissions, and test data
-php artisan db:seed
-
-# Storage link (for POD uploads)
-php artisan storage:link
-
-# Run server
-php artisan serve
-```
-
----
-
-## Default Login
+## Login
 
 | Role | Email | Password |
 |------|-------|----------|
-| SuperAdmin | superadmin@sxpress.com | password |
+| Super Admin | admin@sxpress.com | password |
+| Branch Manager | (created per branch) | password |
+| Agent | (created by super admin) | password |
 
----
+## System Overview
+
+The system manages the full lifecycle of goods transport — from booking at the origin office to delivery at the destination office.
+
+### Workflow
+
+```
+ORIGIN OFFICE (Booking)              DESTINATION OFFICE (Delivery)
+─────────────────────────            ────────────────────────────
+1. GR (Goods Receipt)                4. Import Challan
+   status: created                      challan → completed
+                                        GRs → in_transit
+2. Challan
+   picks GRs → loaded               5. Gate Pass
+   assigns truck + driver               picks GRs → delivered
+                                        releases to consignee
+3. Freight Memo
+   challan → in_transit              6. DDS (Daily Delivery Statement)
+   settles truck owner                  report of today's deliveries
+```
+
+### Status Flow
+
+| Document | Statuses |
+|----------|----------|
+| GR | `created` → `loaded` → `in_transit` → `delivered` |
+| Challan | `created` → `in_transit` → `completed` |
+| Gate Pass | `created` → `released` → `delivered` |
 
 ## Roles & Permissions
 
-```
-SuperAdmin  → Full access, all branches, settings, impersonation
-Admin       → Branch-level operations (no settings access)
-Manager     → Create/edit GR, Challan, Gatepass, Freight Memo, Reports
-Staff       → Day-to-day GR/Challan/Gatepass operations
-Viewer      → Read-only access
-```
+No Spatie package. Roles stored as a `role` column on the `users` table.
 
----
+| Role | Description |
+|------|-------------|
+| `super_admin` | Full access. One user, no branch. Manages everything. |
+| `branch_manager` | Created automatically with each branch. Scoped to their branch. |
+| `agent` | Created by super admin. Scoped to their branch. |
 
-## Indian Transport Workflow
+### Module Permissions
 
-```
-1. Customer brings goods → GR Created (Bilty/Lorry Receipt)
-2. Goods loaded on truck → Gatepass Created (dispatch authorization)
-3. Truck departs → Challan Created (trip manifest)
-4. Goods delivered → POD Uploaded (proof of delivery)
-5. Truck owner paid → Freight Memo Created (settlement)
-```
+Six sub-modules, controlled via two tables:
 
-Each GR follows a state machine:
-```
-[created] → [dispatched] → [in_transit] → [delivered] → [closed]
-```
+- `branch_permissions` — what a **branch** (and its manager) can access
+- `user_permissions` — what an **agent** can access
 
----
+| Permission Key | Module |
+|----------------|--------|
+| `gr` | GR (Goods Receipt) |
+| `challan` | Challan |
+| `freight_memo` | Freight Memo |
+| `import_challan` | Import Challan |
+| `gate_pass` | Gate Pass |
+| `dds` | DDS (Daily Delivery Statement) |
 
-## Branch & GR Numbering
+Middleware: `permission:gr`, `permission:challan`, etc. in `routes/web.php`.
 
-Each branch has a unique 2-letter prefix:
-- Rajkot → AA-00001, AA-00002, ...
-- Navagam → NV-00001, NV-00002, ...
-- Shapar → S1-00001, S1-00002, ...
+## Tech Stack
 
-SuperAdmin assigns prefixes and starting serial numbers per branch.
-
----
-
-## Office Impersonation
-
-SuperAdmin can "impersonate" any branch office from the header bar. When impersonating:
-- All data is scoped to that branch
-- GR creation uses that branch's prefix
-- Dashboard shows that branch's KPIs
-- Reports show that branch's data
-- Click "Stop" to return to all-office view
-
----
-
-## Testing
-
-```bash
-# Run all tests
-php artisan test
-
-# Current: 205 tests, 489 assertions, 0 failures
-```
-
-Test coverage:
-- Authentication (login, throttle, session, password complexity)
-- RBAC (role access, permission enforcement)
-- User Management (CRUD, soft-delete, toggle active)
-- Branch Management (prefix lock, deletion guards)
-- GR Module (numbering, office isolation, status transitions)
-- Gatepass (multi-GR linking, status reversal)
-- Challan (GR data auto-fill, item management)
-- Freight Memo (challan-linked, balance calculation)
-- POD (upload, download, status transition)
-- Dashboard (KPIs, charts, role-based widgets)
-- Reports (all 11 reports, CSV export, filters)
-
----
+- **Framework:** Laravel 10
+- **PHP:** 8.1+
+- **Database:** MySQL 8
+- **Frontend:** Blade + Bootstrap 4 + FontAwesome
+- **Auth:** Custom role column (no Spatie)
 
 ## Project Structure
 
 ```
 app/
 ├── Http/Controllers/
-│   ├── dash/               # GR, Challan, Gatepass, Freight, Dashboard
-│   ├── Auth/               # Login, Register, Password Reset
-│   ├── SuperAdmin/         # Serial assignment
-│   ├── ReportController    # All reports with CSV export
-│   ├── BranchController    # Branch CRUD
-│   └── UserController      # User management
-├── Models/                 # Eloquent models with relationships
-├── Services/               # GrWorkflowService (state machine)
-├── Traits/                 # OfficeScopeTrait, Auditable
-└── Events/                 # GRCreated, GRDispatched, PODUploaded
-
+│   ├── dash/                    # Operational modules
+│   │   ├── GrController.php
+│   │   ├── ChallanController.php
+│   │   ├── FreightController.php
+│   │   ├── ImportChallanController.php
+│   │   ├── GatepassController.php
+│   │   ├── DdsController.php
+│   │   └── DashboardController.php
+│   ├── BranchController.php     # Branch + manager + permissions CRUD
+│   ├── UserController.php       # Agent CRUD
+│   └── Middleware/
+│       ├── CheckPermission.php  # permission:X middleware
+│       └── CheckRole.php        # role:SuperAdmin middleware
+├── Models/
+│   ├── User.php                 # has can_access() method
+│   ├── Gr.php
+│   ├── challan.php
+│   ├── Freight.php              # table: frieghts
+│   ├── gatepass.php
+│   ├── Branch.php
+│   ├── BranchPermission.php
+│   └── UserPermission.php
+├── Traits/
+│   └── OfficeScopeTrait.php     # Branch scoping for all controllers
+routes/
+└── web.php                      # All routes with permission middleware
 resources/views/
 ├── admin/
-│   ├── layout/             # Master, navigation, header
-│   ├── category/           # GR, Challan, Gatepass, Freight, Branch forms
-│   ├── reports/            # 11 report views
-│   └── dashboard.blade.php
-└── auth/                   # Login, register
-
-tests/Feature/              # 205 feature tests
-docs/                       # Logic skill, implementation log
+│   ├── layout/
+│   │   ├── master.blade.php
+│   │   └── navigation.blade.php # Sidebar with Booking/Delivery sections
+│   ├── dashboard.blade.php      # Module cards dashboard
+│   └── category/
+│       ├── challan/
+│       ├── Gatepass/
+│       ├── FrieghtMemo/
+│       ├── import_challan/
+│       ├── dds/
+│       └── Branch/
+└── users/                       # Agent management views
 ```
 
----
+## Setup
 
-## Key Design Decisions
+```bash
+# Install dependencies
+composer install
 
-1. **Office isolation by default** — Every query scoped by `office` column. SuperAdmin bypasses.
-2. **Atomic number generation** — `DB::transaction()` + `lockForUpdate()` prevents race conditions.
-3. **Challan-linked Freight Memo** — Follows real Indian transport workflow, not generic invoicing.
-4. **Session-based impersonation** — No database changes, instant office switching.
-5. **Server-side totals** — Client calculations are never trusted; always recalculated server-side.
+# Copy env
+cp .env.example .env
+php artisan key:generate
 
----
+# Configure database in .env then run migrations
+php artisan migrate
 
-## License
+# Seed super admin
+php artisan db:seed --class=SuperAdminSeeder
 
-Private / Proprietary — Saurashtra Express Logistics.
+# Serve
+php artisan serve
+```
+
+## Branch Setup (Super Admin)
+
+1. Go to **Settings > Branches**
+2. Create a branch — this also creates the branch_manager user
+3. Check the module permissions (GR, Challan, Freight Memo, etc.)
+4. Go to **Settings > Users** to create agents for that branch
+
+## Key Tables
+
+| Table | Purpose |
+|-------|---------|
+| `grs` | Goods Receipts |
+| `challans` | Challans (truck loading documents) |
+| `challan_items` | Items in a challan (linked GRs) |
+| `frieghts` | Freight Memos (truck owner settlements) |
+| `gatepasses` | Gate Passes (delivery release) |
+| `branches` | Company branches/offices |
+| `branch_permissions` | Module access per branch |
+| `user_permissions` | Module access per agent |
+| `users` | All users with `role` column |
+| `vehicles` | Truck fleet |
+| `truckdrivers` | Driver records |
+
+## Notes
+
+- All queries are branch-scoped via `OfficeScopeTrait`
+- Super admin sees all branches, can impersonate any office
+- Auto-numbering for GR/Challan/FM/GP uses atomic row-locking (no race conditions)
+- Accounting module is suppressed — will be reworked in a future phase

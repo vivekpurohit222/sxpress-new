@@ -99,10 +99,10 @@
                                     <td>
                                         <a href="{{ route('gatepass.show', $row->id) }}" class="btn btn-secondary btn-sm" title="View"><i class="fa fa-eye"></i></a>
                                         <a href="{{ route('gatepass.print', $row->id) }}" class="btn btn-warning btn-sm" title="Print"><i class="fa fa-print"></i></a>
-                                        @hasanyrole('SuperAdmin|Admin|Manager')
+                                        @hasanyrole('SuperAdmin|BranchManager')
                                         <a href="{{ route('gatepass.edit', $row->id) }}" class="btn btn-primary btn-sm" title="Edit"><i class="fa fa-edit"></i></a>
                                         @endhasanyrole
-                                        @hasanyrole('SuperAdmin|Admin')
+                                        @hasanyrole('SuperAdmin|BranchManager')
                                         <form action="{{ route('gatepass.destroy', $row->id) }}" method="POST" style="display:inline;">
                                             @method('DELETE')
                                             @csrf

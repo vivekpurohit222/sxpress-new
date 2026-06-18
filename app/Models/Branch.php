@@ -37,6 +37,14 @@ class Branch extends Model
     // ─────────────────────────────────────────────────────────────────────
 
     /**
+     * Module permissions for this branch.
+     */
+    public function permissions(): HasMany
+    {
+        return $this->hasMany(BranchPermission::class);
+    }
+
+    /**
      * GRs belonging to this branch (linked via office = branch_name).
      */
     public function grs(): HasMany

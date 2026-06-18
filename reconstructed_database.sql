@@ -338,7 +338,7 @@ CREATE TABLE `grs` (
   `other` decimal(12,2) NOT NULL DEFAULT 0,
   `bc_amount` decimal(12,2) NOT NULL DEFAULT 0,
   `total_amount` decimal(12,2) NOT NULL DEFAULT 0,
-  `status` enum('booked','loaded','in_transit','delivered','cancelled') NOT NULL DEFAULT 'booked',
+  `status` enum('created','loaded','in_transit','delivered','closed','cancelled') NOT NULL DEFAULT 'created',
   `deleted_at` timestamp NULL,
   `created_by_id` bigint unsigned NULL,
   `updated_by_id` bigint unsigned NULL,

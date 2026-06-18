@@ -9,21 +9,17 @@ class ReportModuleTest extends TestCase
 {
     private function superAdmin(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'SuperAdmin'))->first();
+        return User::where('role', 'super_admin')->first();
     }
 
     private function staff(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'Staff'))
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['SuperAdmin', 'Admin', 'Manager']))
-            ->first();
+        return User::where('role', 'agent')->first();
     }
 
     private function manager(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'Manager'))
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['SuperAdmin', 'Admin']))
-            ->first();
+        return User::where('role', 'branch_manager')->first();
     }
 
     // ─── Access Control ─────────────────────────────────────────────

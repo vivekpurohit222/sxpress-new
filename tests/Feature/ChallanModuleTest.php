@@ -13,21 +13,19 @@ class ChallanModuleTest extends TestCase
 {
     private function superAdmin(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'SuperAdmin'))->first();
+        return User::where('role', 'super_admin')->first();
     }
 
     private function staff(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'Staff'))
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['SuperAdmin', 'Admin', 'Manager']))
-            ->first();
+        return User::where('role', 'agent')->first();
     }
 
     private function createTestGr(string $suffix = ''): int
     {
         return DB::table('grs')->insertGetId([
             'gr_no' => 'CHL-' . rand(10000, 99999) . $suffix,
-            'office' => 'Rajkot', 'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'office' => 'Rajkot - PN', 'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'copy_date' => now(), 'consignor' => 'Challan Test' . $suffix,
             'consignor_address' => 'Test Addr', 'consignor_gst_no' => '',
             'consignee' => 'Recipient' . $suffix,
@@ -83,7 +81,7 @@ class ChallanModuleTest extends TestCase
 
         $this->actingAs($this->staff())->post(route('challan.store'), [
             'challan_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'vehicle_id' => $this->getVehicleId(),
             'driver_id' => $this->getDriverId(),
@@ -112,7 +110,7 @@ class ChallanModuleTest extends TestCase
     {
         $this->actingAs($this->staff())->post(route('challan.store'), [
             'challan_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'vehicle_id' => $this->getVehicleId(),
             'driver_id' => $this->getDriverId(),
@@ -132,7 +130,7 @@ class ChallanModuleTest extends TestCase
         // Create challan via controller
         $this->actingAs($this->superAdmin())->post(route('challan.store'), [
             'challan_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'vehicle_id' => $this->getVehicleId(), 'driver_id' => $this->getDriverId(),
             'items' => [['gr_no' => $grNo, 'description' => 'Edit test', 'nugs' => 3, 'weight' => 30]],
         ]);
@@ -162,7 +160,7 @@ class ChallanModuleTest extends TestCase
 
         $this->actingAs($this->superAdmin())->post(route('challan.store'), [
             'challan_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'vehicle_id' => $this->getVehicleId(), 'driver_id' => $this->getDriverId(),
             'items' => [['gr_no' => $grNo, 'description' => 'Delete test', 'nugs' => 2, 'weight' => 20]],
         ]);
@@ -185,10 +183,10 @@ class ChallanModuleTest extends TestCase
         $challanId = DB::table('challans')->insertGetId([
             'challan_no' => 'CH-STAFF-DEL',
             'challan_date' => now(),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'truck_no' => 'GJ-03-AB-1234', 'driver_name' => 'Test',
             'license' => 'DL-123', 'owner_name' => 'Test',
-            'office' => 'Rajkot',
+            'office' => 'Rajkot - PN',
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
@@ -212,7 +210,7 @@ class ChallanModuleTest extends TestCase
 
         $this->actingAs($this->superAdmin())->post(route('challan.store'), [
             'challan_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'vehicle_id' => $this->getVehicleId(), 'driver_id' => $this->getDriverId(),
             'items' => [['gr_no' => $grNo, 'description' => 'Print test', 'nugs' => 4, 'weight' => 40]],
         ])->assertRedirect(route('challan.index'));
@@ -243,7 +241,7 @@ class ChallanModuleTest extends TestCase
 
         $this->actingAs($this->superAdmin())->post(route('challan.store'), [
             'challan_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'vehicle_id' => $this->getVehicleId(), 'driver_id' => $this->getDriverId(),
             'items' => [['gr_no' => $grNo, 'description' => 'Last item', 'nugs' => 1, 'weight' => 10]],
         ])->assertRedirect(route('challan.index'));

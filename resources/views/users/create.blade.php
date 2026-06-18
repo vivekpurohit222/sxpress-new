@@ -2,12 +2,12 @@
 @section('content')
 
 <div class="breadcrumbs">
-    <div class="col-sm-4"><div class="page-header float-left"><div class="page-title"><h1>Add User</h1></div></div></div>
+    <div class="col-sm-4"><div class="page-header float-left"><div class="page-title"><h1>Add Agent</h1></div></div></div>
     <div class="col-sm-8"><div class="page-header float-right"><div class="page-title">
         <ol class="breadcrumb text-right">
             <li><a href="{{ url('/dash') }}">Dashboard</a></li>
             <li><a href="{{ route('users.index') }}">Users</a></li>
-            <li class="active">Add User</li>
+            <li class="active">Add Agent</li>
         </ol>
     </div></div></div>
 </div>
@@ -17,13 +17,11 @@
         <div class="row">
             <div class="col-lg-8 offset-lg-2">
                 <div class="card">
-                    <div class="card-header"><strong>Add New User</strong></div>
+                    <div class="card-header"><strong>Add New Agent</strong></div>
                     <div class="card-body">
 
                         @if($errors->any())
-                        <div class="alert alert-danger">
-                            <ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
-                        </div>
+                        <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
                         @endif
 
                         <form method="POST" action="{{ route('users.store') }}">
@@ -33,47 +31,14 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Full Name <span class="text-danger">*</span></label>
-                                        <input type="text" name="name" class="form-control" value="{{ old('name') }}" required maxlength="120" placeholder="Enter full name">
+                                        <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label>Email Address <span class="text-danger">*</span></label>
-                                        <input type="email" name="email" class="form-control" value="{{ old('email') }}" required placeholder="Enter email address">
+                                        <label>Email <span class="text-danger">*</span></label>
+                                        <input type="email" name="email" class="form-control" value="{{ old('email') }}" required>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Phone Number</label>
-                                        <input type="text" name="phone" class="form-control" value="{{ old('phone') }}" maxlength="15" placeholder="Enter phone number">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Branch / Office <span class="text-danger">*</span></label>
-                                        <select name="office" class="form-control" required>
-                                            <option value="">-- Select office --</option>
-                                            @foreach($offices as $office)
-                                                <option value="{{ $office }}" {{ old('office') == $office ? 'selected' : '' }}>{{ $office }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Assign Role <span class="text-danger">*</span></label>
-                                <div class="mt-1">
-                                    @foreach($roles as $role)
-                                        <div class="form-check form-check-inline">
-                                            <input type="checkbox" name="roles[]" value="{{ $role->id }}" class="form-check-input"
-                                                {{ in_array($role->id, old('roles', [])) ? 'checked' : '' }}>
-                                            <label class="form-check-label">{{ $role->name }}</label>
-                                        </div>
-                                    @endforeach
                                 </div>
                             </div>
 
@@ -81,28 +46,43 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Password <span class="text-danger">*</span></label>
-                                        <input type="password" name="password" class="form-control" required minlength="8" placeholder="Min 8 chars, 1 uppercase, 1 number">
+                                        <input type="password" name="password" class="form-control" required minlength="6">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Confirm Password <span class="text-danger">*</span></label>
-                                        <input type="password" name="password_confirmation" class="form-control" required placeholder="Re-enter password">
+                                        <input type="password" name="password_confirmation" class="form-control" required>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <div class="form-check">
-                                    <input type="hidden" name="is_active" value="0">
-                                    <input type="checkbox" name="is_active" value="1" class="form-check-input" id="is_active"
-                                        {{ old('is_active', '1') == '1' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="is_active" style="text-transform:none;font-size:13px">Account Active (user can login immediately)</label>
-                                </div>
+                                <label>Branch <span class="text-danger">*</span></label>
+                                <select name="branch_id" class="form-control" required>
+                                    <option value="">-- Select Branch --</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->branch_name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
 
                             <hr>
-                            <button type="submit" class="btn btn-success btn-block">Create User</button>
+                            <label><strong>Module Permissions</strong></label>
+                            <div class="row mt-2">
+                                @foreach($modules as $mod)
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="permissions[]" value="{{ $mod }}" class="form-check-input"
+                                            {{ in_array($mod, old('permissions', [])) ? 'checked' : '' }}>
+                                        <label class="form-check-label">{{ ucwords(str_replace('_', ' ', $mod)) }}</label>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+
+                            <hr>
+                            <button type="submit" class="btn btn-success btn-block">Create Agent</button>
                         </form>
                     </div>
                 </div>

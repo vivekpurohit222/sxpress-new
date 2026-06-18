@@ -14,7 +14,7 @@
                             </div>
                         </div>
 <div class="card-body">
-                    <form method="POST" action="{{url('/dash/register/'.$id.'/update')}}">
+                    <form method="POST" action="{{url('/register/'.$id.'/update')}}">
                        {{csrf_field()}}
                                     <input type="hidden" name="_method" value="PATCH"/>
 

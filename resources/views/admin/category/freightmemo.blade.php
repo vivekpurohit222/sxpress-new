@@ -13,7 +13,7 @@
                     <div class="page-title">
                         <ol class="breadcrumb text-right">
                             <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                            <li><a href="{{url('/dash/frieghtmemo')}}">FreightMemo Table</a></li>
+                            <li><a href="{{url('/frieghtmemo')}}">FreightMemo Table</a></li>
                             <li class="active">FreightMemo Create</li>
                         </ol>
                     </div>

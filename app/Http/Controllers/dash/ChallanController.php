@@ -111,19 +111,20 @@ class ChallanController extends Controller
             'driver_id.required' => 'Please select a driver.',
         ]);
 
-        // Validate all GRs belong to current office
+        // Validate all GRs belong to current office AND are in 'created' status (not already loaded)
         $grNos = collect($validated['items'])->pluck('gr_no');
         $grs = Gr::whereIn('gr_no', $grNos)
                  ->where('office', $this->currentOffice())
+                 ->where('status', 'created')
                  ->get();
 
         if ($grs->count() !== $grNos->unique()->count()) {
             return back()->withInput()->withErrors([
-                'items' => 'One or more GR numbers do not belong to your office or do not exist.'
+                'items' => 'One or more GR numbers are invalid, don\'t belong to your office, or have already been loaded onto another challan.'
             ]);
         }
 
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($validated, $grNos) {
             $totalWeight = collect($validated['items'])->sum('weight');
 
             // Get vehicle/driver info for legacy columns
@@ -138,6 +139,7 @@ class ChallanController extends Controller
                 'vehicle_id'   => $validated['vehicle_id'],
                 'driver_id'    => $validated['driver_id'],
                 'total_weight' => $totalWeight,
+                'status'       => 'created',
                 'office'       => $this->currentOffice(),
                 // Legacy columns
                 'truck_no'     => $vehicle->vehicle_number ?? '',
@@ -165,6 +167,9 @@ class ChallanController extends Controller
                     'other'       => $gr->other ?? 0,
                 ]);
             }
+
+            // Update GR statuses to 'loaded'
+            Gr::whereIn('gr_no', $grNos)->update(['status' => 'loaded']);
         });
 
         return redirect()->route('challan.index')
@@ -267,7 +272,7 @@ class ChallanController extends Controller
             abort(403);
         }
 
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403, 'Only Manager or higher can edit a challan.');
         }
 
@@ -284,7 +289,7 @@ class ChallanController extends Controller
      */
     public function challandelete($id)
     {
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403);
         }
 
@@ -322,7 +327,7 @@ class ChallanController extends Controller
             abort(403);
         }
 
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403);
         }
 
@@ -407,7 +412,7 @@ class ChallanController extends Controller
     {
         $challan = challan::findOrFail($id);
 
-        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Admin'])) {
+        if (!Auth::user()->hasAnyRole(['SuperAdmin', 'BranchManager'])) {
             abort(403);
         }
         if (!$this->isSuperAdmin() && $challan->office !== $this->currentOffice()) {

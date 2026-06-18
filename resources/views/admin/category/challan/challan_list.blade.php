@@ -80,10 +80,10 @@
                                     <td>
                                         <a href="{{ route('challan.show', $row->id) }}" class="btn btn-secondary btn-sm"><i class="fa fa-eye"></i></a>
                                         <a href="{{ route('challan.print', $row->id) }}" class="btn btn-warning btn-sm"><i class="fa fa-print"></i></a>
-                                        @hasanyrole('SuperAdmin|Admin|Manager')
+                                        @hasanyrole('SuperAdmin|BranchManager')
                                         <a href="{{ route('challan.edit', $row->id) }}" class="btn btn-primary btn-sm"><i class="fa fa-edit"></i></a>
                                         @endhasanyrole
-                                        @hasanyrole('SuperAdmin|Admin')
+                                        @hasanyrole('SuperAdmin|BranchManager')
                                         <form action="{{ route('challan.destroy', $row->id) }}" method="POST" style="display:inline;">
                                             @method('DELETE') @csrf
                                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this challan and all items?')"><i class="fa fa-trash"></i></button>

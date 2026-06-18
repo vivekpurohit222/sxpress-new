@@ -15,7 +15,7 @@
                     <div class="page-title">
                         <ol class="breadcrumb text-right">
                             <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                            <li><a href="{{url('/dash/truckdriver')}}">Truck Driver Details</a></li>
+                            <li><a href="{{url('/truckdriver')}}">Truck Driver Details</a></li>
                             <li class="active"> View Truck Detail</li>
                         </ol>
                     </div>

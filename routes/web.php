@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | SXpress Logistics - Transport Management System
-| Role-based access control per SXPRESS_LOGIC_SKILL section 1
+| Permission-based access control using branch_permissions & user_permissions
 |
 */
 
@@ -18,7 +18,7 @@ Route::get('/', function () {
 
 Auth::routes(['register' => false]);
 
-// Public tracking portal - no auth required
+// Public tracking portal
 Route::get('/track/{gr_no}', [App\Http\Controllers\PublicController::class, 'track'])->name('public.track');
 
 // All authenticated routes
@@ -27,27 +27,26 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dash', [App\Http\Controllers\dash\DashboardController::class, 'index'])->name('dash');
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // OFFICE IMPERSONATION (SuperAdmin only)
+    // OFFICE IMPERSONATION (super_admin only)
     // ═══════════════════════════════════════════════════════════════════════════
     Route::post('/impersonate-office', function (\Illuminate\Http\Request $request) {
-        if (!auth()->user()->hasRole('SuperAdmin')) abort(403);
+        if (!auth()->user()->isSuperAdmin()) abort(403);
         $office = $request->validate(['office' => 'required|exists:branches,branch_name'])['office'];
         session(['impersonating_office' => $office]);
         return redirect()->back();
     })->name('impersonate.office');
 
     Route::post('/stop-impersonating', function () {
-        if (!auth()->user()->hasRole('SuperAdmin')) abort(403);
+        if (!auth()->user()->isSuperAdmin()) abort(403);
         session()->forget('impersonating_office');
         return redirect()->back();
     })->name('impersonate.stop');
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // SUPERADMIN ONLY - Branch management, serial assignment, cross-branch view
-    // Per SXPRESS_LOGIC_SKILL section 12
+    // SUPER ADMIN ONLY — Settings, Branches, Users, Vehicles, Drivers, etc.
     // ═══════════════════════════════════════════════════════════════════════════
     Route::middleware(['role:SuperAdmin'])->group(function () {
-        // Branch CRUD
+        // Branch CRUD (with manager + permissions)
         Route::get('/branch', [App\Http\Controllers\BranchController::class, 'index'])->name('branch.index');
         Route::get('/branch/create', [App\Http\Controllers\BranchController::class, 'create'])->name('branch.create');
         Route::post('/branch/store', [App\Http\Controllers\BranchController::class, 'store'])->name('branch.store');
@@ -56,21 +55,14 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/branch/{id}', [App\Http\Controllers\BranchController::class, 'destroy'])->name('branch.destroy');
         Route::get('/branch/{id}', [App\Http\Controllers\BranchController::class, 'show'])->name('branch.show');
 
+        // User (Agent) Management
+        Route::resource('/users', App\Http\Controllers\UserController::class);
+        Route::patch('/users/{id}/toggle-active', [App\Http\Controllers\UserController::class, 'toggleActive'])->name('users.toggle-active');
+
         // GR Serial Assignment
         Route::get('/serial-assign', [App\Http\Controllers\SuperAdmin\SerialController::class, 'index'])->name('serial.index');
         Route::post('/serial-assign', [App\Http\Controllers\SuperAdmin\SerialController::class, 'assign'])->name('serial.assign');
 
-        // SuperAdmin Dashboard — redirect to main dashboard (unified)
-        Route::get('/superadmin/dashboard', function() {
-            return redirect()->route('dash');
-        })->name('superadmin.dashboard');
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SUPERADMIN ONLY - Settings: Vehicle, Driver, Route, Station, User, Roles
-    // Only SuperAdmin can manage settings. Managers/Admins cannot access.
-    // ═══════════════════════════════════════════════════════════════════════════
-    Route::middleware(['role:SuperAdmin'])->group(function () {
         // Vehicle
         Route::get('/vehicle', [App\Http\Controllers\VehicleController::class, 'index']);
         Route::get('/vehicle/create', [App\Http\Controllers\VehicleController::class, 'create']);
@@ -107,21 +99,69 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/station/{id}', [App\Http\Controllers\StationController::class, 'destroy'])->name('station.destroy');
         Route::get('/station/{id}', [App\Http\Controllers\StationController::class, 'show'])->name('station.show');
 
-        // User Management
-        Route::resource('/users', App\Http\Controllers\UserController::class);
-        Route::patch('/users/{id}/toggle-active', [App\Http\Controllers\UserController::class, 'toggleActive'])->name('users.toggle-active');
+        // Customer, Consignor, Consignee
+        Route::get('/customer', [App\Http\Controllers\CustomerController::class, 'index'])->name('customer.index');
+        Route::get('/customer/create', [App\Http\Controllers\CustomerController::class, 'create'])->name('customer.create');
+        Route::post('/customer/store', [App\Http\Controllers\CustomerController::class, 'store'])->name('customer.store');
+        Route::get('/customer/{id}/edit', [App\Http\Controllers\CustomerController::class, 'edit'])->name('customer.edit');
+        Route::put('/customer/{id}', [App\Http\Controllers\CustomerController::class, 'update'])->name('customer.update');
+        Route::delete('/customer/{id}', [App\Http\Controllers\CustomerController::class, 'destroy'])->name('customer.destroy');
+        Route::get('/customer/{id}', [App\Http\Controllers\CustomerController::class, 'show'])->name('customer.show');
 
-        // Roles & Permissions
-        Route::resource('/roles', App\Http\Controllers\RoleController::class);
-        Route::resource('/permissions', App\Http\Controllers\PermissionController::class);
+        Route::get('/consignor', [App\Http\Controllers\ConsignorController::class, 'index'])->name('consignor.index');
+        Route::get('/consignor/create', [App\Http\Controllers\ConsignorController::class, 'create'])->name('consignor.create');
+        Route::post('/consignor/store', [App\Http\Controllers\ConsignorController::class, 'store'])->name('consignor.store');
+        Route::get('/consignor/{id}/edit', [App\Http\Controllers\ConsignorController::class, 'edit'])->name('consignor.edit');
+        Route::put('/consignor/{id}', [App\Http\Controllers\ConsignorController::class, 'update'])->name('consignor.update');
+        Route::delete('/consignor/{id}', [App\Http\Controllers\ConsignorController::class, 'destroy'])->name('consignor.destroy');
+        Route::get('/consignor/{id}', [App\Http\Controllers\ConsignorController::class, 'show'])->name('consignor.show');
+
+        Route::get('/consignee', [App\Http\Controllers\ConsigneeController::class, 'index'])->name('consignee.index');
+        Route::get('/consignee/create', [App\Http\Controllers\ConsigneeController::class, 'create'])->name('consignee.create');
+        Route::post('/consignee/store', [App\Http\Controllers\ConsigneeController::class, 'store'])->name('consignee.store');
+        Route::get('/consignee/{id}/edit', [App\Http\Controllers\ConsigneeController::class, 'edit'])->name('consignee.edit');
+        Route::put('/consignee/{id}', [App\Http\Controllers\ConsigneeController::class, 'update'])->name('consignee.update');
+        Route::delete('/consignee/{id}', [App\Http\Controllers\ConsigneeController::class, 'destroy'])->name('consignee.destroy');
+        Route::get('/consignee/{id}', [App\Http\Controllers\ConsigneeController::class, 'show'])->name('consignee.show');
     });
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // MANAGER+ - Freight Memo (create/edit/delete)
-    // Per SXPRESS_LOGIC_SKILL section 7
+    // MODULE ROUTES — protected by permission middleware
     // ═══════════════════════════════════════════════════════════════════════════
-    Route::middleware(['role:SuperAdmin|Admin|Manager'])->group(function () {
-        // Freight Memo
+
+    // GR Module
+    Route::middleware(['permission:gr'])->group(function () {
+        Route::get('/gr', [App\Http\Controllers\dash\GrController::class, 'index'])->name('gr.index');
+        Route::get('/gr/create', [App\Http\Controllers\dash\GrController::class, 'create'])->name('gr.create');
+        Route::post('/gr/store', [App\Http\Controllers\dash\GrController::class, 'store'])->name('gr.store');
+        Route::get('/gr/{id}/edit', [App\Http\Controllers\dash\GrController::class, 'edit'])->name('gr.edit');
+        Route::patch('/gr/{id}/update', [App\Http\Controllers\dash\GrController::class, 'update'])->name('gr.update');
+        Route::delete('/gr/{id}/delete', [App\Http\Controllers\dash\GrController::class, 'destroy'])->name('gr.destroy');
+        Route::get('/gr/{id}/upload-pod', [App\Http\Controllers\dash\GrController::class, 'uploadPodForm']);
+        Route::post('/gr/{id}/upload-pod', [App\Http\Controllers\dash\GrController::class, 'uploadPod']);
+        Route::post('/gr/{id}/mark-delivered', [App\Http\Controllers\dash\GrController::class, 'markDelivered']);
+        Route::post('/gr/{id}/update-delivery-status', [App\Http\Controllers\dash\GrController::class, 'updateDeliveryStatus']);
+        Route::post('/gr/{id}/mark-topay-collected', [App\Http\Controllers\dash\GrController::class, 'markTopayCollected']);
+        Route::post('/gr/{id}/undo-topay-collected', [App\Http\Controllers\dash\GrController::class, 'undoTopayCollected']);
+    });
+
+    // Challan Module
+    Route::middleware(['permission:challan'])->group(function () {
+        Route::get('/challan', [App\Http\Controllers\dash\ChallanController::class, 'index'])->name('challan.index');
+        Route::get('/challan/create', [App\Http\Controllers\dash\ChallanController::class, 'create'])->name('challan.create');
+        Route::post('/challan/store', [App\Http\Controllers\dash\ChallanController::class, 'store'])->name('challan.store');
+        Route::get('/challan/{id}/getData', [App\Http\Controllers\dash\ChallanController::class, 'getData']);
+        Route::get('/challan/{id}/challanfetchdata', [App\Http\Controllers\dash\ChallanController::class, 'challanfetchdata']);
+        Route::post('/challan/challanIteams', [App\Http\Controllers\dash\ChallanController::class, 'challanIteamStore']);
+        Route::get('/challan/{id}/edit', [App\Http\Controllers\dash\ChallanController::class, 'edit'])->name('challan.edit');
+        Route::patch('/challan/{id}/update', [App\Http\Controllers\dash\ChallanController::class, 'update'])->name('challan.update');
+        Route::delete('/challan/{id}/delete', [App\Http\Controllers\dash\ChallanController::class, 'destroy'])->name('challan.destroy');
+        Route::get('/challan/{id}', [App\Http\Controllers\dash\ChallanController::class, 'show'])->name('challan.show');
+        Route::delete('/challan-item/{id}', [App\Http\Controllers\dash\ChallanController::class, 'challandelete'])->name('challan.item.destroy');
+    });
+
+    // Freight Memo Module
+    Route::middleware(['permission:freight_memo'])->group(function () {
         Route::get('/frieghtmemo', [App\Http\Controllers\dash\FreightController::class, 'index'])->name('frieghtmemo.index');
         Route::get('/frieghtmemo/create', [App\Http\Controllers\dash\FreightController::class, 'create'])->name('frieghtmemo.create');
         Route::post('/frieghtmemo/store', [App\Http\Controllers\dash\FreightController::class, 'store'])->name('frieghtmemo.store');
@@ -133,28 +173,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/frieghtmemo/{id}/print', [App\Http\Controllers\dash\FreightController::class, 'print'])->name('frieghtmemo.print');
     });
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STAFF+ - GR, Gatepass, Challan, Customer, Consignor, Consignee (CRUD)
-    // Per SXPRESS_LOGIC_SKILL section 4, 5, 6
-    // ═══════════════════════════════════════════════════════════════════════════
-    Route::middleware(['role:SuperAdmin|Admin|Manager|Staff|Viewer'])->group(function () {
-        // GR Module
-        Route::get('/gr', [App\Http\Controllers\dash\GrController::class, 'index'])->name('gr.index');
-        Route::get('/gr/create', [App\Http\Controllers\dash\GrController::class, 'create'])->name('gr.create');
-        Route::post('/gr/store', [App\Http\Controllers\dash\GrController::class, 'store'])->name('gr.store');
-        Route::get('/gr/{id}/edit', [App\Http\Controllers\dash\GrController::class, 'edit'])->name('gr.edit');
-        Route::patch('/gr/{id}/update', [App\Http\Controllers\dash\GrController::class, 'update'])->name('gr.update');
-        Route::delete('/gr/{id}/delete', [App\Http\Controllers\dash\GrController::class, 'destroy'])->name('gr.destroy');
-
-        // GR POD & TO-PAY Actions
-        Route::get('/gr/{id}/upload-pod', [App\Http\Controllers\dash\GrController::class, 'uploadPodForm']);
-        Route::post('/gr/{id}/upload-pod', [App\Http\Controllers\dash\GrController::class, 'uploadPod']);
-        Route::post('/gr/{id}/mark-delivered', [App\Http\Controllers\dash\GrController::class, 'markDelivered']);
-        Route::post('/gr/{id}/update-delivery-status', [App\Http\Controllers\dash\GrController::class, 'updateDeliveryStatus']);
-        Route::post('/gr/{id}/mark-topay-collected', [App\Http\Controllers\dash\GrController::class, 'markTopayCollected']);
-        Route::post('/gr/{id}/undo-topay-collected', [App\Http\Controllers\dash\GrController::class, 'undoTopayCollected']);
-
-        // Gatepass
+    // Gate Pass Module
+    Route::middleware(['permission:gate_pass'])->group(function () {
         Route::get('/gatepass', [App\Http\Controllers\dash\GatepassController::class, 'index'])->name('gatepass.index');
         Route::get('/gatepass/create', [App\Http\Controllers\dash\GatepassController::class, 'create'])->name('gatepass.create');
         Route::post('/gatepass/store', [App\Http\Controllers\dash\GatepassController::class, 'store'])->name('gatepass.store');
@@ -162,89 +182,40 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/gatepass/{id}/update', [App\Http\Controllers\dash\GatepassController::class, 'update'])->name('gatepass.update');
         Route::delete('/gatepass/{id}/delete', [App\Http\Controllers\dash\GatepassController::class, 'destroy'])->name('gatepass.destroy');
         Route::get('/gatepass/{id}', [App\Http\Controllers\dash\GatepassController::class, 'show'])->name('gatepass.show');
+    });
 
-        // Challan
-        Route::get('/challan', [App\Http\Controllers\dash\ChallanController::class, 'index'])->name('challan.index');
-        Route::get('/challan/create', [App\Http\Controllers\dash\ChallanController::class, 'create'])->name('challan.create');
-        Route::post('/challan/store', [App\Http\Controllers\dash\ChallanController::class, 'store'])->name('challan.store');
-        Route::get('/challan/{id}/getData', [App\Http\Controllers\dash\ChallanController::class, 'getData']);
-        Route::get('/challan/{id}/challanfetchdata', [App\Http\Controllers\dash\ChallanController::class, 'challanfetchdata']);
-        Route::post('/challan/challanIteams', [App\Http\Controllers\dash\ChallanController::class, 'challanIteamStore']);
-        Route::get('/challan/{id}/edit', [App\Http\Controllers\dash\ChallanController::class, 'edit'])->name('challan.edit');
-        Route::patch('/challan/{id}/update', [App\Http\Controllers\dash\ChallanController::class, 'update'])->name('challan.update');
-        Route::delete('/challan/{id}/delete', [App\Http\Controllers\dash\ChallanController::class, 'destroy'])->name('challan.destroy');
-        Route::get('/challan/{id}', [App\Http\Controllers\dash\ChallanController::class, 'show'])->name('challan.show');
+    // Import Challan Module
+    Route::middleware(['permission:import_challan'])->group(function () {
+        Route::get('/import-challan', [App\Http\Controllers\dash\ImportChallanController::class, 'index'])->name('import_challan.index');
+        Route::post('/import-challan/{id}/import', [App\Http\Controllers\dash\ImportChallanController::class, 'import'])->name('import_challan.import');
+    });
 
-        // Delete single challan item
-        Route::delete('/challan-item/{id}', [App\Http\Controllers\dash\ChallanController::class, 'challandelete'])->name('challan.item.destroy');
-
-        // Customer
-        Route::get('/customer', [App\Http\Controllers\CustomerController::class, 'index']);
-        Route::get('/customer/create', [App\Http\Controllers\CustomerController::class, 'create']);
-        Route::post('/customer/store', [App\Http\Controllers\CustomerController::class, 'store']);
-        Route::get('/customer/{id}/edit', [App\Http\Controllers\CustomerController::class, 'edit'])->name('customer.edit');
-        Route::put('/customer/{id}', [App\Http\Controllers\CustomerController::class, 'update'])->name('customer.update');
-        Route::delete('/customer/{id}', [App\Http\Controllers\CustomerController::class, 'destroy'])->name('customer.destroy');
-        Route::get('/customer/{id}', [App\Http\Controllers\CustomerController::class, 'show'])->name('customer.show');
-
-        // Consignor
-        Route::get('/consignor', [App\Http\Controllers\ConsignorController::class, 'index']);
-        Route::get('/consignor/create', [App\Http\Controllers\ConsignorController::class, 'create']);
-        Route::post('/consignor/store', [App\Http\Controllers\ConsignorController::class, 'store']);
-        Route::get('/consignor/{id}/edit', [App\Http\Controllers\ConsignorController::class, 'edit'])->name('consignor.edit');
-        Route::put('/consignor/{id}', [App\Http\Controllers\ConsignorController::class, 'update'])->name('consignor.update');
-        Route::delete('/consignor/{id}', [App\Http\Controllers\ConsignorController::class, 'destroy'])->name('consignor.destroy');
-        Route::get('/consignor/{id}', [App\Http\Controllers\ConsignorController::class, 'show'])->name('consignor.show');
-
-        // Consignee
-        Route::get('/consignee', [App\Http\Controllers\ConsigneeController::class, 'index']);
-        Route::get('/consignee/create', [App\Http\Controllers\ConsigneeController::class, 'create']);
-        Route::post('/consignee/store', [App\Http\Controllers\ConsigneeController::class, 'store']);
-        Route::get('/consignee/{id}/edit', [App\Http\Controllers\ConsigneeController::class, 'edit'])->name('consignee.edit');
-        Route::put('/consignee/{id}', [App\Http\Controllers\ConsigneeController::class, 'update'])->name('consignee.update');
-        Route::delete('/consignee/{id}', [App\Http\Controllers\ConsigneeController::class, 'destroy'])->name('consignee.destroy');
-        Route::get('/consignee/{id}', [App\Http\Controllers\ConsigneeController::class, 'show'])->name('consignee.show');
+    // DDS Module
+    Route::middleware(['permission:dds'])->group(function () {
+        Route::get('/dds', [App\Http\Controllers\dash\DdsController::class, 'index'])->name('dds.index');
     });
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // ALL AUTHENTICATED USERS - Print, Autocomplete, Route Rate
+    // ALL AUTHENTICATED — Print, Autocomplete, Reports
     // ═══════════════════════════════════════════════════════════════════════════
 
-    // GR Print (any authenticated user can print)
     Route::get('/gr/{id}/print', [App\Http\Controllers\dash\GrController::class, 'show'])->name('gr.print');
-
-    // GR POD download/view with access control
     Route::get('/gr/{id}/pod', [App\Http\Controllers\dash\GrController::class, 'viewPod'])->name('gr.pod');
-
-    // Gatepass Print
     Route::get('/gatepass/{id}/print', [App\Http\Controllers\dash\GatepassController::class, 'print'])->name('gatepass.print');
-
-    // Challan Print
     Route::get('/challan/{id}/print', [App\Http\Controllers\dash\ChallanController::class, 'print'])->name('challan.print');
 
-    // GR Autocomplete for gatepass/challan
     Route::get('/gr/autocomplete', [App\Http\Controllers\dash\GrController::class, 'autocomplete'])->name('gr.autocomplete');
-
-    // Autocomplete for GR form
     Route::get('/gr/autocomplete/consignor', [App\Http\Controllers\dash\GrController::class, 'autocompleteConsignor']);
     Route::get('/gr/autocomplete/consignee', [App\Http\Controllers\dash\GrController::class, 'autocompleteConsignee']);
-
-    // GR number preview for office selection (SuperAdmin)
     Route::get('/gr/next-number/{office}', [App\Http\Controllers\dash\GrController::class, 'nextGrNumber']);
-
-    // Route rate lookup for GR form
     Route::get('/route-rate', [App\Http\Controllers\RouteController::class, 'getRate'])->name('route.rate');
 
-    // Autocomplete endpoints (dedicated)
     Route::get('/dash/autocomplete/consignor', [App\Http\Controllers\ConsignorController::class, 'autocomplete'])->name('autocomplete.consignor');
     Route::get('/dash/autocomplete/consignee', [App\Http\Controllers\ConsigneeController::class, 'autocomplete'])->name('autocomplete.consignee');
     Route::get('/dash/autocomplete/gr', [App\Http\Controllers\dash\GrController::class, 'autocomplete'])->name('autocomplete.gr');
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // REPORTS - Manager+ access
-    // Per SXPRESS_PHASE_9
-    // ═══════════════════════════════════════════════════════════════════════════
-    Route::middleware(['role:SuperAdmin|Admin|Manager'])->prefix('dash/reports')->name('reports.')->group(function () {
+    // Reports (super_admin and branch_manager only)
+    Route::middleware(['role:SuperAdmin|BranchManager'])->prefix('dash/reports')->name('reports.')->group(function () {
         Route::get('/', [App\Http\Controllers\ReportController::class, 'index'])->name('index');
         Route::get('/gr-register', [App\Http\Controllers\ReportController::class, 'grRegister'])->name('gr_register');
         Route::get('/daily-booking', [App\Http\Controllers\ReportController::class, 'dailyBooking'])->name('daily_booking');

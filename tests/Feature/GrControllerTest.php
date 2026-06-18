@@ -33,11 +33,11 @@ class GrControllerTest extends TestCase
 
     public function test_gr_store_creates_new_gr(): void
     {
-        $initialCount = Gr::where('office', 'Rajkot')->count();
+        $initialCount = Gr::where('office', 'Rajkot - PN')->count();
 
         $this->post('/gr/store', [
             'copy_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'consignor' => 'Test Consignor Co',
             'consignor_address' => '123 Test Street, Rajkot',
@@ -58,7 +58,7 @@ class GrControllerTest extends TestCase
             'to_pay' => 0,
         ])->assertRedirect('/gr');
 
-        $newCount = Gr::where('office', 'Rajkot')->count();
+        $newCount = Gr::where('office', 'Rajkot - PN')->count();
         $this->assertGreaterThan($initialCount, $newCount);
     }
 
@@ -77,7 +77,7 @@ class GrControllerTest extends TestCase
         // Both selected = error
         $this->post('/gr/store', [
             'copy_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'consignor' => 'Test',
             'consignor_address' => 'Test',
@@ -95,7 +95,7 @@ class GrControllerTest extends TestCase
         // Neither selected = error
         $this->post('/gr/store', [
             'copy_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'consignor' => 'Test',
             'consignor_address' => 'Test',
@@ -141,7 +141,7 @@ class GrControllerTest extends TestCase
     public function test_gr_edit_loads(): void
     {
         // Get first GR for Rajkot office
-        $gr = Gr::where('office', 'Rajkot')->first();
+        $gr = Gr::where('office', 'Rajkot - PN')->first();
         if ($gr) {
             $this->get("/gr/{$gr->id}/edit")->assertStatus(200);
         } else {
@@ -151,7 +151,7 @@ class GrControllerTest extends TestCase
 
     public function test_gr_print_view_loads(): void
     {
-        $gr = Gr::where('office', 'Rajkot')->first();
+        $gr = Gr::where('office', 'Rajkot - PN')->first();
         if ($gr) {
             $this->get("/gr/{$gr->id}/print")->assertStatus(200);
         } else {
@@ -163,7 +163,7 @@ class GrControllerTest extends TestCase
     {
         $response = $this->post('/gr/store', [
             'copy_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot',
+            'from_dest' => 'Rajkot - PN',
             'to_dest' => 'Navagam',
             'consignor' => 'Test Total Calc',
             'consignor_address' => 'Test Address',

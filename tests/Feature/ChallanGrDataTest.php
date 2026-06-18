@@ -15,7 +15,7 @@ class ChallanGrDataTest extends TestCase
 {
     private function superAdmin(): User
     {
-        return User::whereHas('roles', fn($q) => $q->where('name', 'SuperAdmin'))->first();
+        return User::where('role', 'super_admin')->first();
     }
 
     public function test_autocomplete_returns_full_gr_fields(): void
@@ -60,7 +60,7 @@ class ChallanGrDataTest extends TestCase
         $grNo = 'TEST-DISP-' . rand(10000, 99999);
         $id = DB::table('grs')->insertGetId([
             'gr_no' => $grNo,
-            'from_dest' => 'Rajkot', 'to_dest' => 'Navagam',
+            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
             'copy_date' => now(),
             'consignor' => 'Disp Test', 'consignor_address' => '', 'consignor_gst_no' => '',
             'consignee' => 'Disp Recv', 'consignee_address' => '', 'consignee_gst_no' => '',
@@ -69,7 +69,7 @@ class ChallanGrDataTest extends TestCase
             'weight' => 10, 'frieght_amount' => 100, 'sur_ch' => 0, 'c_r' => 0,
             'other' => 0, 'bc_amount' => 0, 'total_amount' => 100,
             'paid' => 1, 'to_pay' => 0,
-            'office' => 'Rajkot', 'status' => 'dispatched',
+            'office' => 'Rajkot - PN', 'status' => 'dispatched',
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
@@ -108,7 +108,7 @@ class ChallanGrDataTest extends TestCase
 
     public function test_challan_store_populates_items_from_gr(): void
     {
-        $gr = Gr::where('status', 'created')->where('office', 'Rajkot')->first();
+        $gr = Gr::where('status', 'created')->where('office', 'Rajkot - PN')->first();
 
         if (!$gr) {
             $this->markTestSkipped('No created GR for Rajkot office');
@@ -124,7 +124,7 @@ class ChallanGrDataTest extends TestCase
         $response = $this->actingAs($this->superAdmin())
             ->post(route('challan.store'), [
                 'challan_date' => now()->format('Y-m-d'),
-                'from_dest' => 'Rajkot',
+                'from_dest' => 'Rajkot - PN',
                 'to_dest' => 'Navagam',
                 'vehicle_id' => $vehicleId,
                 'driver_id' => $driverId,
