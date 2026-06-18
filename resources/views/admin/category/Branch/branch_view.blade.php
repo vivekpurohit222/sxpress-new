@@ -21,8 +21,30 @@
                         <td>{{ $branch->branch_code }}</td>
                     </tr>
                     <tr>
-                        <th>GR Prefix</th>
-                        <td><span class="badge badge-info">{{ $branch->gr_prefix }}</span></td>
+                        <th>Serial Ranges (FY {{ \App\Services\SerialNumberService::currentFyPrefix() }})</th>
+                        <td>
+                            @php
+                                $serials = \App\Models\BranchSerial::where('branch_id', $branch->id)
+                                    ->where('fy_year', \App\Services\SerialNumberService::currentFyPrefix())
+                                    ->get()->keyBy('module');
+                                $labels = ['gr' => 'GR', 'challan' => 'Challan', 'freight_memo' => 'Freight Memo', 'gate_pass' => 'Gate Pass'];
+                            @endphp
+                            <table class="table table-sm table-bordered mb-0">
+                                <tr><th>Module</th><th>Range</th><th>Used</th><th>Remaining</th></tr>
+                                @foreach($labels as $mod => $label)
+                                <tr>
+                                    <td>{{ $label }}</td>
+                                    @if(isset($serials[$mod]))
+                                        <td>{{ str_pad($serials[$mod]->range_start, 6, '0', STR_PAD_LEFT) }} - {{ str_pad($serials[$mod]->range_end, 6, '0', STR_PAD_LEFT) }}</td>
+                                        <td>{{ $serials[$mod]->current_value > 0 ? $serials[$mod]->current_value : '0' }}</td>
+                                        <td>{{ \App\Services\SerialNumberService::remaining($branch->id, $mod) }}</td>
+                                    @else
+                                        <td colspan="3" class="text-muted">Not configured</td>
+                                    @endif
+                                </tr>
+                                @endforeach
+                            </table>
+                        </td>
                     </tr>
                     <tr>
                         <th>Address</th>

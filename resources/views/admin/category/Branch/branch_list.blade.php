@@ -44,7 +44,7 @@
                         <tr>
                             <th>Branch Name</th>
                             <th>Code</th>
-                            <th>GR Prefix</th>
+                            <th>GR Range</th>
                             <th>City</th>
                             <th>State</th>
                             <th>Phone</th>
@@ -57,7 +57,16 @@
                         <tr class="{{ !$branch->status ? 'text-muted' : '' }}">
                             <td><strong>{{ $branch->branch_name }}</strong></td>
                             <td>{{ $branch->branch_code }}</td>
-                            <td><span class="badge badge-info">{{ $branch->gr_prefix }}</span></td>
+                            <td>
+                                @php
+                                    $serial = \App\Models\BranchSerial::where('branch_id', $branch->id)->where('module', 'gr')->where('fy_year', \App\Services\SerialNumberService::currentFyPrefix())->first();
+                                @endphp
+                                @if($serial)
+                                    <span class="badge badge-info">{{ str_pad($serial->range_start, 6, '0', STR_PAD_LEFT) }} - {{ str_pad($serial->range_end, 6, '0', STR_PAD_LEFT) }}</span>
+                                @else
+                                    <span class="badge badge-secondary">Not Set</span>
+                                @endif
+                            </td>
                             <td>{{ $branch->city ?? '-' }}</td>
                             <td>{{ $branch->state ?? '-' }}</td>
                             <td>{{ $branch->phone ?? '-' }}</td>

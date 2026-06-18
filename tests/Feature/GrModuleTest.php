@@ -32,25 +32,24 @@ class GrModuleTest extends TestCase
             'from_dest'         => 'Rajkot - PN',
             'to_dest'           => 'Navagam',
             'consignor'         => 'Test Consignor Pvt Ltd',
-            'consignor_address' => '123 Industrial Area, Rajkot',
             'consignor_gst_no'  => '',
             'consignee'         => 'Test Consignee Corp',
-            'consignee_address' => '456 Market Road, Navagam',
             'consignee_gst_no'  => '',
             'nugs'              => 5,
             'meth'              => 'Bag',
             'weight'            => 250.5,
             'description'       => 'Cotton bales for transport',
-            'pm'                => '',
+            'pm'                => 'BY ROAD',
             'eway_bill_number'  => '',
-            'bill_amount'       => 0,
+            'bill_amount'       => 5000,
             'frieght_amount'    => 1500,
             'sur_ch'            => 100,
+            'labour'            => 0,
+            'dd'                => 0,
             'c_r'               => 50,
+            'bc_amount'         => 0,
             'other'             => 25,
-            'bc_amount'         => 15,
-            'paid'              => 1,
-            'to_pay'            => 0,
+            'to_pay'            => '1',
         ], $override);
     }
 
@@ -81,7 +80,7 @@ class GrModuleTest extends TestCase
         $this->assertSame('created', $gr->status);
         $this->assertSame($staff->id, $gr->created_by_id);
         $this->assertNotNull($gr->gr_no);
-        $this->assertStringStartsWith('AA-', $gr->gr_no); // Rajkot prefix
+        $this->assertStringStartsWith('26/', $gr->gr_no); // Rajkot prefix
 
         // Cleanup
         $gr->forceDelete();
@@ -93,40 +92,39 @@ class GrModuleTest extends TestCase
         $data = $this->validGrData([
             'frieght_amount' => 1000,
             'sur_ch' => 200,
+            'labour' => 50,
+            'dd' => 30,
             'c_r' => 100,
+            'bc_amount' => 0,
             'other' => 50,
-            'bc_amount' => 30,
         ]);
 
         $this->actingAs($staff)->post(route('gr.store'), $data);
 
         $gr = Gr::where('consignor', 'Test Consignor Pvt Ltd')->latest()->first();
-        // Total = 1000 + 200 + 100 + 50 + 30 = 1380
-        $this->assertEquals(1380.00, (float) $gr->total_amount);
+        // Total = 1000 + 200 + 50 + 30 + 100 + 0 + 50 = 1430
+        $this->assertEquals(1430.00, (float) $gr->total_amount);
 
         $gr->forceDelete();
     }
 
-    public function test_paid_and_topay_mutual_exclusion(): void
+    public function test_payment_type_is_required(): void
     {
         $staff = $this->staff();
 
-        // Both selected = error
+        // Missing to_pay field = error
+        $data = $this->validGrData();
+        unset($data['to_pay']);
         $this->actingAs($staff)
-            ->post(route('gr.store'), $this->validGrData(['paid' => 1, 'to_pay' => 1]))
-            ->assertSessionHasErrors('paid');
-
-        // Neither selected = error
-        $this->actingAs($staff)
-            ->post(route('gr.store'), $this->validGrData(['paid' => 0, 'to_pay' => 0]))
-            ->assertSessionHasErrors('paid');
+            ->post(route('gr.store'), $data)
+            ->assertSessionHasErrors('to_pay');
     }
 
     public function test_create_validates_required_fields(): void
     {
         $this->actingAs($this->staff())
             ->post(route('gr.store'), [])
-            ->assertSessionHasErrors(['copy_date', 'from_dest', 'to_dest', 'consignor', 'consignee', 'nugs', 'meth', 'weight', 'description', 'frieght_amount']);
+            ->assertSessionHasErrors(['copy_date', 'from_dest', 'to_dest', 'consignor', 'consignee', 'nugs', 'meth', 'description', 'frieght_amount', 'to_pay']);
     }
 
     public function test_gr_number_is_unique_and_sequential(): void
@@ -141,9 +139,9 @@ class GrModuleTest extends TestCase
 
         $this->assertNotEquals($gr1->gr_no, $gr2->gr_no);
 
-        // Numbers should be sequential
-        $num1 = (int) substr($gr1->gr_no, 3); // strip prefix "AA-"
-        $num2 = (int) substr($gr2->gr_no, 3);
+        // Numbers should be sequential — format is '26/27 - XXXXXX'
+        $num1 = (int) substr($gr1->gr_no, 8); // strip '26/27 - '
+        $num2 = (int) substr($gr2->gr_no, 8);
         $this->assertSame($num1 + 1, $num2);
 
         $gr1->forceDelete();
@@ -336,7 +334,7 @@ class GrModuleTest extends TestCase
     {
         $staff = $this->staff();
         $this->actingAs($staff)->post(route('gr.store'), $this->validGrData([
-            'consignor' => 'ToPay Test', 'paid' => 0, 'to_pay' => 1,
+            'consignor' => 'ToPay Test', 'to_pay' => '1',
         ]));
         $gr = Gr::where('consignor', 'ToPay Test')->first();
 
@@ -357,16 +355,18 @@ class GrModuleTest extends TestCase
         $data = $this->validGrData([
             'frieght_amount' => 500,
             'sur_ch' => 0,
+            'labour' => 0,
+            'dd' => 0,
             'c_r' => 0,
-            'other' => 0,
             'bc_amount' => 0,
+            'other' => 0,
             'total_amount' => 99999, // client tries to inject a fake total
         ]);
 
         $this->actingAs($staff)->post(route('gr.store'), $data);
 
         $gr = Gr::where('consignor', 'Test Consignor Pvt Ltd')->latest()->first();
-        // Server recalculates: 500 + 0 + 0 + 0 + 0 = 500
+        // Server recalculates: 500 + 0 + 0 + 0 + 0 + 0 + 0 = 500
         $this->assertEquals(500.00, (float) $gr->total_amount);
         $this->assertNotEquals(99999, (float) $gr->total_amount);
 

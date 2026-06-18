@@ -81,24 +81,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/truckdriver/{id}/delete', [App\Http\Controllers\TruckdriverController::class, 'destroy'])->name('truckdriver_destroy');
         Route::get('/truckdriver/{id}/view', [App\Http\Controllers\TruckdriverController::class, 'show'])->name('truckdriver_view');
 
-        // Route
-        Route::get('/route', [App\Http\Controllers\RouteController::class, 'index']);
-        Route::get('/route/create', [App\Http\Controllers\RouteController::class, 'create']);
-        Route::post('/route/store', [App\Http\Controllers\RouteController::class, 'store']);
-        Route::get('/route/{id}/edit', [App\Http\Controllers\RouteController::class, 'edit'])->name('route.edit');
-        Route::put('/route/{id}', [App\Http\Controllers\RouteController::class, 'update'])->name('route.update');
-        Route::delete('/route/{id}', [App\Http\Controllers\RouteController::class, 'destroy'])->name('route.destroy');
-        Route::get('/route/{id}', [App\Http\Controllers\RouteController::class, 'show'])->name('route.show');
-
-        // Station
-        Route::get('/station', [App\Http\Controllers\StationController::class, 'index']);
-        Route::get('/station/create', [App\Http\Controllers\StationController::class, 'create']);
-        Route::post('/station/store', [App\Http\Controllers\StationController::class, 'store']);
-        Route::get('/station/{id}/edit', [App\Http\Controllers\StationController::class, 'edit'])->name('station.edit');
-        Route::put('/station/{id}', [App\Http\Controllers\StationController::class, 'update'])->name('station.update');
-        Route::delete('/station/{id}', [App\Http\Controllers\StationController::class, 'destroy'])->name('station.destroy');
-        Route::get('/station/{id}', [App\Http\Controllers\StationController::class, 'show'])->name('station.show');
-
         // Customer, Consignor, Consignee
         Route::get('/customer', [App\Http\Controllers\CustomerController::class, 'index'])->name('customer.index');
         Route::get('/customer/create', [App\Http\Controllers\CustomerController::class, 'create'])->name('customer.create');
@@ -208,8 +190,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/gr/autocomplete/consignor', [App\Http\Controllers\dash\GrController::class, 'autocompleteConsignor']);
     Route::get('/gr/autocomplete/consignee', [App\Http\Controllers\dash\GrController::class, 'autocompleteConsignee']);
     Route::get('/gr/next-number/{office}', [App\Http\Controllers\dash\GrController::class, 'nextGrNumber']);
-    Route::get('/route-rate', [App\Http\Controllers\RouteController::class, 'getRate'])->name('route.rate');
-
+    Route::get('/customer/fetch-by-gst', [App\Http\Controllers\dash\GrController::class, 'fetchByGst'])->name('customer.fetch-by-gst');
     Route::get('/dash/autocomplete/consignor', [App\Http\Controllers\ConsignorController::class, 'autocomplete'])->name('autocomplete.consignor');
     Route::get('/dash/autocomplete/consignee', [App\Http\Controllers\ConsigneeController::class, 'autocomplete'])->name('autocomplete.consignee');
     Route::get('/dash/autocomplete/gr', [App\Http\Controllers\dash\GrController::class, 'autocomplete'])->name('autocomplete.gr');

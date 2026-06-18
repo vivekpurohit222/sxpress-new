@@ -53,6 +53,18 @@
 
 <div class="content mt-3">
 
+    {{-- Serial Number Warnings --}}
+    @if(!empty($warnings))
+    <div class="alert alert-warning">
+        <strong><i class="fa fa-exclamation-triangle"></i> Serial Number Warnings:</strong>
+        <ul class="mb-0 mt-1">
+            @foreach($warnings as $w)
+            <li>{{ $w }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
     {{-- Header --}}
     <div class="dash-header">
         <div class="greet">

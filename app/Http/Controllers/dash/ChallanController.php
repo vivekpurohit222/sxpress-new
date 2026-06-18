@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\dash;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\challan;
 use App\Models\ChallanItem;
 use App\Models\Gr;
 use App\Models\Vehicle;
 use App\Models\truckdriver;
+use App\Services\SerialNumberService;
 use App\Traits\OfficeScopeTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -448,17 +450,12 @@ class ChallanController extends Controller
     // ─────────────────────────────────────────────────────────────────
 
     /**
-     * Generate challan number.
-     * Format: CH-00001 (sequential per branch, 5-digit zero-padded).
-     * Per SXPRESS_LOGIC_SKILL section 6.
+     * Generate challan number (preview, non-locking).
      */
     private function generateChallanNo(string $office): string
     {
-        $last = challan::withTrashed()
-            ->orderByRaw("CAST(SUBSTRING(challan_no, 4) AS UNSIGNED) DESC")
-            ->first();
-        $next = $last ? ((int) substr($last->challan_no, 3)) + 1 : 1;
-        return 'CH-' . str_pad($next, 5, '0', STR_PAD_LEFT);
+        $branch = Branch::where('branch_name', $office)->first();
+        return SerialNumberService::previewNext($branch->id, 'challan');
     }
 
     /**
@@ -466,14 +463,7 @@ class ChallanController extends Controller
      */
     private function generateChallanNoAtomic(string $office): string
     {
-        return DB::transaction(function () use ($office) {
-            $last = challan::withTrashed()
-                ->lockForUpdate()
-                ->orderByRaw("CAST(SUBSTRING(challan_no, 4) AS UNSIGNED) DESC")
-                ->first();
-
-            $next = $last ? ((int) substr($last->challan_no, 3)) + 1 : 1;
-            return 'CH-' . str_pad($next, 5, '0', STR_PAD_LEFT);
-        });
+        $branch = Branch::where('branch_name', $office)->first();
+        return SerialNumberService::generateNext($branch->id, 'challan');
     }
 }

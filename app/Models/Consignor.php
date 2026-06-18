@@ -19,6 +19,8 @@ class Consignor extends Model
         'state',
         'pincode',
         'phone',
+        'rate_per_nug',
+        'rate_per_kg',
         'email',
         'contact_person',
         'mobile',
@@ -27,6 +29,8 @@ class Consignor extends Model
 
     protected $casts = [
         'status' => 'boolean',
+        'rate_per_nug' => 'decimal:2',
+        'rate_per_kg' => 'decimal:2',
     ];
 
     public function scopeActive($query)

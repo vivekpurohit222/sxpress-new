@@ -8,6 +8,7 @@ use App\Models\Freight;
 use App\Models\challan;
 use App\Models\ChallanItem;
 use App\Models\Gr;
+use App\Services\SerialNumberService;
 use App\Traits\OfficeScopeTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -296,25 +297,13 @@ class FreightController extends Controller
 
     private function generateFmNo(string $office): string
     {
-        $last = Freight::withTrashed()->where('office', $office)->whereNotNull('fm_no')->where('fm_no', '!=', '')->orderByDesc('id')->first();
-        if ($last && $last->fm_no) {
-            $num = (int) preg_replace('/[^0-9]/', '', $last->fm_no);
-            return str_pad($num + 1, 5, '0', STR_PAD_LEFT);
-        }
-        return '00001';
+        $branch = Branch::where('branch_name', $office)->first();
+        return SerialNumberService::previewNext($branch->id, 'freight_memo');
     }
 
     private function generateFmNoAtomic(string $office): string
     {
-        return DB::transaction(function () use ($office) {
-            $last = Freight::withTrashed()->where('office', $office)
-                ->whereNotNull('fm_no')->where('fm_no', '!=', '')
-                ->lockForUpdate()->orderByDesc('id')->first();
-            if ($last && $last->fm_no) {
-                $num = (int) preg_replace('/[^0-9]/', '', $last->fm_no);
-                return str_pad($num + 1, 5, '0', STR_PAD_LEFT);
-            }
-            return '00001';
-        });
+        $branch = Branch::where('branch_name', $office)->first();
+        return SerialNumberService::generateNext($branch->id, 'freight_memo');
     }
 }

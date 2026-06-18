@@ -92,7 +92,7 @@ class ChallanModuleTest extends TestCase
 
         $challan = challan::orderByDesc('id')->first();
         $this->assertNotNull($challan);
-        $this->assertStringStartsWith('CH-', $challan->challan_no);
+        $this->assertStringStartsWith('26/', $challan->challan_no);
         $this->assertEquals(75.5, (float) $challan->total_weight);
 
         $item = ChallanItem::where('challan_id', $challan->id)->first();

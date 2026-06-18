@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\dash;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Gr;
 use App\Models\Freight;
 use App\Models\gatepass;
 use App\Models\challan;
+use App\Services\SerialNumberService;
 use App\Traits\OfficeScopeTrait;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -36,6 +38,29 @@ class DashboardController extends Controller
             'dds' => $office ? gatepass::where('office', $office)->whereDate('gp_date', $today)->count() : gatepass::whereDate('gp_date', $today)->count(),
         ];
 
-        return view('admin.dashboard', compact('user', 'office', 'counts'));
+        // Serial number warnings
+        $warnings = [];
+        if ($office) {
+            $branch = Branch::where('branch_name', $office)->first();
+            if ($branch) {
+                $moduleLabels = [
+                    'gr' => 'GR',
+                    'challan' => 'Challan',
+                    'freight_memo' => 'Freight Memo',
+                    'gate_pass' => 'Gate Pass',
+                ];
+
+                foreach ($moduleLabels as $module => $label) {
+                    if ($user->can_access($module === 'gate_pass' ? 'gate_pass' : $module)) {
+                        $remaining = SerialNumberService::remaining($branch->id, $module);
+                        if ($remaining <= 50) {
+                            $warnings[] = "{$label} serial limit reaching! Only {$remaining} numbers left.";
+                        }
+                    }
+                }
+            }
+        }
+
+        return view('admin.dashboard', compact('user', 'office', 'counts', 'warnings'));
     }
 }

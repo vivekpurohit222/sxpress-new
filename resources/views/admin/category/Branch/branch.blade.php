@@ -28,24 +28,17 @@
                             @csrf
 
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Branch Name <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" name="branch_name" value="{{ old('branch_name') }}" required placeholder="Enter branch name (e.g. Rajkot)">
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Branch Code <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" name="branch_code" value="{{ old('branch_code') }}" required style="text-transform:uppercase" placeholder="Enter code (e.g. RJKT)">
                                         <small class="text-muted">Uppercase letters/numbers only</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label>GR Prefix <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" name="gr_prefix" value="{{ old('gr_prefix') }}" maxlength="2" placeholder="e.g. AA" pattern="[A-Z]{2}" style="text-transform:uppercase" required>
-                                        <small class="text-muted">2 uppercase letters for GR numbering</small>
                                     </div>
                                 </div>
                             </div>
@@ -99,6 +92,82 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <hr>
+                            <h5><strong>Branch Manager</strong></h5>
+                            <p class="text-muted" style="font-size:12px">A branch manager user will be created automatically with this branch</p>
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Manager Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="manager_name" value="{{ old('manager_name') }}" required placeholder="Full name">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Manager Email <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control" name="manager_email" value="{{ old('manager_email') }}" required placeholder="Login email">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Manager Password <span class="text-danger">*</span></label>
+                                        <input type="password" class="form-control" name="manager_password" required minlength="6" placeholder="Min 6 characters">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+                            <h5><strong>Module Permissions</strong></h5>
+                            <p class="text-muted" style="font-size:12px">Select which modules this branch can access</p>
+                            <div class="row">
+                                @foreach($modules as $mod)
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="permissions[]" value="{{ $mod }}" class="form-check-input"
+                                            {{ in_array($mod, old('permissions', [])) ? 'checked' : '' }}>
+                                        <label class="form-check-label">{{ ucwords(str_replace('_', ' ', $mod)) }}</label>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+
+                            <hr>
+                            <h5><strong>Serial Number Ranges</strong></h5>
+                            <p class="text-muted" style="font-size:12px">Assign serial number ranges for each module in this financial year ({{ \App\Services\SerialNumberService::currentFyPrefix() }})</p>
+
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Module</th>
+                                        <th>Range Start</th>
+                                        <th>Range End</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>GR</td>
+                                        <td><input type="text" class="form-control form-control-sm" name="gr_range_start" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('gr_range_start', 1) }}" min="1" max="999999" required></td>
+                                        <td><input type="text" class="form-control form-control-sm" name="gr_range_end" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('gr_range_end', 999999) }}" min="1" max="999999" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Challan</td>
+                                        <td><input type="text" class="form-control form-control-sm" name="challan_range_start" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('challan_range_start', 1) }}" min="1" max="999999" required></td>
+                                        <td><input type="text" class="form-control form-control-sm" name="challan_range_end" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('challan_range_end', 999999) }}" min="1" max="999999" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Freight Memo</td>
+                                        <td><input type="text" class="form-control form-control-sm" name="freight_memo_range_start" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('freight_memo_range_start', 1) }}" min="1" max="999999" required></td>
+                                        <td><input type="text" class="form-control form-control-sm" name="freight_memo_range_end" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('freight_memo_range_end', 999999) }}" min="1" max="999999" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Gate Pass</td>
+                                        <td><input type="text" class="form-control form-control-sm" name="gate_pass_range_start" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('gate_pass_range_start', 1) }}" min="1" max="999999" required></td>
+                                        <td><input type="text" class="form-control form-control-sm" name="gate_pass_range_end" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('gate_pass_range_end', 999999) }}" min="1" max="999999" required></td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
                             <hr>
                             <div class="row">

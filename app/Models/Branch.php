@@ -69,11 +69,19 @@ class Branch extends Model
     }
 
     /**
-     * GR serial assignment for this branch.
+     * GR serial assignment for this branch (legacy single-serial).
      */
     public function serial(): HasOne
     {
-        return $this->hasOne(BranchSerial::class, 'office', 'branch_name');
+        return $this->hasOne(BranchSerial::class, 'branch_id');
+    }
+
+    /**
+     * All serial assignments for this branch.
+     */
+    public function serials(): HasMany
+    {
+        return $this->hasMany(BranchSerial::class, 'branch_id');
     }
 
     // ─────────────────────────────────────────────────────────────────────

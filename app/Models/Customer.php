@@ -21,6 +21,8 @@ class Customer extends Model
         'billing_pincode',
         'shipping_address',
         'phone',
+        'rate_per_nug',
+        'rate_per_kg',
         'email',
         'contact_person',
         'credit_limit',
@@ -30,6 +32,8 @@ class Customer extends Model
 
     protected $casts = [
         'credit_limit' => 'decimal:2',
+        'rate_per_nug' => 'decimal:2',
+        'rate_per_kg' => 'decimal:2',
         'status' => 'boolean',
     ];
 

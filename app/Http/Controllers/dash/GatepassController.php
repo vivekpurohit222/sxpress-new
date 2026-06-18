@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\dash;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\gatepass;
 use App\Models\Gr;
 use App\Models\Vehicle;
 use App\Models\truckdriver;
 use App\Events\GRDispatched;
 use App\Services\GrWorkflowService;
+use App\Services\SerialNumberService;
 use App\Traits\OfficeScopeTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -256,16 +258,13 @@ class GatepassController extends Controller
 
         try {
             DB::transaction(function () use ($gp) {
-                // Block if any linked GR has progressed beyond 'dispatched'
-                $advancedGrs = $gp->grs()->whereNotIn('status', ['dispatched', 'created'])->count();
-                if ($advancedGrs > 0) {
-                    throw new \Exception('Cannot delete — one or more GRs have progressed beyond dispatched status.');
-                }
-
-                // Reverse GR status back to 'created'
+                // Reverse GR status back to 'in_transit' (gate pass delivered → revert to in_transit)
                 foreach ($gp->grs as $gr) {
-                    if ($gr->status === 'dispatched') {
-                        $gr->update(['status' => 'created']);
+                    if ($gr->status === 'delivered') {
+                        $gr->update([
+                            'status' => 'in_transit',
+                            'delivered_at' => null,
+                        ]);
                     }
                 }
 
@@ -277,7 +276,7 @@ class GatepassController extends Controller
         }
 
         return redirect()->route('gatepass.index')
-            ->with('success', 'Gatepass deleted. GR(s) reverted to Created status.');
+            ->with('success', 'Gatepass deleted. GR(s) reverted to In Transit status.');
     }
 
     /**
@@ -300,27 +299,20 @@ class GatepassController extends Controller
     // ─────────────────────────────────────────────────────────────────
 
     /**
-     * Generate gatepass number — integer sequential (globally unique).
-     * Legacy table uses INT for gp_no with unique constraint.
+     * Generate gatepass number (preview, non-locking).
      */
-    private function generateGatepassNo(string $office): int
+    private function generateGatepassNo(string $office): string
     {
-        $last = gatepass::withTrashed()->orderByDesc('gp_no')->first();
-        return $last ? ($last->gp_no + 1) : 1;
+        $branch = Branch::where('branch_name', $office)->first();
+        return SerialNumberService::previewNext($branch->id, 'gate_pass');
     }
 
     /**
      * Atomic gatepass number generation with row locking.
      */
-    private function generateGatepassNoAtomic(string $office): int
+    private function generateGatepassNoAtomic(string $office): string
     {
-        return DB::transaction(function () {
-            $last = gatepass::withTrashed()
-                ->lockForUpdate()
-                ->orderByDesc('gp_no')
-                ->first();
-
-            return $last ? ($last->gp_no + 1) : 1;
-        });
+        $branch = Branch::where('branch_name', $office)->first();
+        return SerialNumberService::generateNext($branch->id, 'gate_pass');
     }
 }

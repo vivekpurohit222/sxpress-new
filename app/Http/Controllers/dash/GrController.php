@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Gr;
 use App\Models\Branch;
 use App\Models\BranchSerial;
+use App\Models\Customer;
 use App\Models\Consignor;
 use App\Models\Consignee;
 use App\Events\GRCreated;
 use App\Events\GRDelivered;
 use App\Events\PODUploaded;
-use App\Rules\GstNumberRule;
 use App\Services\GrWorkflowService;
+use App\Services\SerialNumberService;
 use App\Traits\OfficeScopeTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -123,28 +124,18 @@ class GrController extends Controller
     {
         $validated = $request->validate($this->grRules(), $this->grValidationMessages());
 
-        // Mutual exclusivity: paid XOR to_pay
-        $paidSelected = (bool) ($validated['paid'] ?? false);
-        $toPaySelected = (bool) ($validated['to_pay'] ?? false);
-
-        if ($paidSelected === $toPaySelected) {
-            return back()->withInput()->withErrors([
-                'paid' => 'Select either Paid OR To-Pay, not both. At least one is required.'
-            ]);
-        }
+        // Payment type: single radio (to_pay=1 means TO PAY, to_pay=0 means PAID)
+        $validated['to_pay'] = $request->to_pay == '1' ? 1 : 0;
+        $validated['paid'] = $request->to_pay == '0' ? 1 : 0;
 
         // Determine the office for this GR
-        // SuperAdmin can create for any office via from_dest selection
-        // Other users are locked to their own office
         if ($this->isSuperAdmin()) {
             $office = $validated['from_dest'];
-            // Validate the selected office exists
             if (!Branch::where('branch_name', $office)->exists()) {
                 return back()->withInput()->withErrors(['from_dest' => 'Invalid office selected.']);
             }
         } else {
             $office = auth()->user()->office;
-            // Force from_dest to be the user's own office (prevent tampering)
             $validated['from_dest'] = $office;
         }
 
@@ -154,11 +145,29 @@ class GrController extends Controller
         $validated['status'] = 'created';
         $validated['created_by_id'] = auth()->id();
 
+        // If method is "Other", use the meth_other text value
+        if ($validated['meth'] === 'Other' && $request->filled('meth_other')) {
+            $validated['meth'] = $request->meth_other;
+        }
+
         // Ensure nullable string fields default to empty string (DB has NOT NULL)
         $validated['pm'] = $validated['pm'] ?? '';
         $validated['eway_bill_number'] = $validated['eway_bill_number'] ?? '';
         $validated['consignor_gst_no'] = $validated['consignor_gst_no'] ?? '';
         $validated['consignee_gst_no'] = $validated['consignee_gst_no'] ?? '';
+        $validated['consignor_address'] = $validated['consignor_address'] ?? '';
+        $validated['consignee_address'] = $validated['consignee_address'] ?? '';
+
+        // Numeric defaults
+        $validated['sur_ch'] = $validated['sur_ch'] ?? 0;
+        $validated['labour'] = $validated['labour'] ?? 0;
+        $validated['dd'] = $validated['dd'] ?? 0;
+        $validated['c_r'] = $validated['c_r'] ?? 0;
+        $validated['bc_amount'] = $validated['bc_amount'] ?? 0;
+        $validated['other'] = $validated['other'] ?? 0;
+        $validated['bill_amount'] = $validated['bill_amount'] ?? 0;
+        $validated['rate'] = $validated['rate'] ?? 0;
+        $validated['weight'] = $validated['weight'] ?? 0;
 
         // Atomic GR number generation using the selected office's prefix
         $validated['gr_no'] = $this->generateGrNumberAtomic($office);
@@ -259,13 +268,13 @@ class GrController extends Controller
 
         $validated = $request->validate($this->grRules(), $this->grValidationMessages());
 
-        // Mutual exclusivity check
-        $paidSelected = (bool) ($validated['paid'] ?? false);
-        $toPaySelected = (bool) ($validated['to_pay'] ?? false);
-        if ($paidSelected === $toPaySelected) {
-            return back()->withInput()->withErrors([
-                'paid' => 'Select either Paid OR To-Pay, not both.'
-            ]);
+        // Payment type: single radio (to_pay=1 means TO PAY, to_pay=0 means PAID)
+        $validated['to_pay'] = $request->to_pay == '1' ? 1 : 0;
+        $validated['paid'] = $request->to_pay == '0' ? 1 : 0;
+
+        // If method is "Other", use the meth_other text value
+        if ($validated['meth'] === 'Other' && $request->filled('meth_other')) {
+            $validated['meth'] = $request->meth_other;
         }
 
         // Server-side total recalculation
@@ -276,6 +285,19 @@ class GrController extends Controller
         $validated['eway_bill_number'] = $validated['eway_bill_number'] ?? '';
         $validated['consignor_gst_no'] = $validated['consignor_gst_no'] ?? '';
         $validated['consignee_gst_no'] = $validated['consignee_gst_no'] ?? '';
+        $validated['consignor_address'] = $validated['consignor_address'] ?? '';
+        $validated['consignee_address'] = $validated['consignee_address'] ?? '';
+
+        // Numeric defaults
+        $validated['sur_ch'] = $validated['sur_ch'] ?? 0;
+        $validated['labour'] = $validated['labour'] ?? 0;
+        $validated['dd'] = $validated['dd'] ?? 0;
+        $validated['c_r'] = $validated['c_r'] ?? 0;
+        $validated['bc_amount'] = $validated['bc_amount'] ?? 0;
+        $validated['other'] = $validated['other'] ?? 0;
+        $validated['bill_amount'] = $validated['bill_amount'] ?? 0;
+        $validated['rate'] = $validated['rate'] ?? 0;
+        $validated['weight'] = $validated['weight'] ?? 0;
 
         $gr->update($validated);
 
@@ -309,6 +331,54 @@ class GrController extends Controller
         $gr->delete();
 
         return redirect()->route('gr.index')->with('success', 'GR deleted successfully.');
+    }
+
+    /**
+     * Fetch customer (consignor/consignee) by GST number for AJAX auto-fill.
+     */
+    public function fetchByGst(Request $request)
+    {
+        $gst = $request->get('gst_no');
+
+        // Search in consignors first, then consignees
+        $consignor = Consignor::where('gst_no', $gst)->first();
+        if ($consignor) {
+            return response()->json([
+                'found' => true,
+                'id' => $consignor->id,
+                'name' => $consignor->consignor_name,
+                'gst_no' => $consignor->gst_no,
+                'rate_per_nug' => $consignor->rate_per_nug ?? 0,
+                'rate_per_kg' => $consignor->rate_per_kg ?? 0,
+            ]);
+        }
+
+        $consignee = Consignee::where('gst_no', $gst)->first();
+        if ($consignee) {
+            return response()->json([
+                'found' => true,
+                'id' => $consignee->id,
+                'name' => $consignee->consignee_name,
+                'gst_no' => $consignee->gst_no,
+                'rate_per_nug' => $consignee->rate_per_nug ?? 0,
+                'rate_per_kg' => $consignee->rate_per_kg ?? 0,
+            ]);
+        }
+
+        // Also check Customer table
+        $customer = Customer::where('gst_no', $gst)->first();
+        if ($customer) {
+            return response()->json([
+                'found' => true,
+                'id' => $customer->id,
+                'name' => $customer->customer_name,
+                'gst_no' => $customer->gst_no,
+                'rate_per_nug' => $customer->rate_per_nug ?? 0,
+                'rate_per_kg' => $customer->rate_per_kg ?? 0,
+            ]);
+        }
+
+        return response()->json(['found' => false]);
     }
 
     /**
@@ -628,26 +698,8 @@ class GrController extends Controller
      */
     private function generateGrNumberAtomic(string $office): string
     {
-        return DB::transaction(function () use ($office) {
-            // Determine prefix
-            $prefix = $this->getGrPrefix($office);
-
-            // Lock and get the last GR with this prefix
-            $lastGr = Gr::where('gr_no', 'like', $prefix . '-%')
-                ->orderByRaw('CAST(SUBSTRING_INDEX(gr_no, \'-\', -1) AS UNSIGNED) DESC')
-                ->lockForUpdate()
-                ->first();
-
-            // Check BranchSerial for start_from
-            $branchSerial = BranchSerial::where('office', $office)->first();
-            $startFrom = $branchSerial ? $branchSerial->start_from : 1;
-
-            $nextNum = $lastGr
-                ? ((int) substr($lastGr->gr_no, strlen($prefix) + 1)) + 1
-                : $startFrom;
-
-            return $prefix . '-' . str_pad($nextNum, 5, '0', STR_PAD_LEFT);
-        });
+        $branch = Branch::where('branch_name', $office)->first();
+        return SerialNumberService::generateNext($branch->id, 'gr');
     }
 
     /**
@@ -655,46 +707,8 @@ class GrController extends Controller
      */
     private function generateGrNumber(string $office): string
     {
-        $prefix = $this->getGrPrefix($office);
-
-        $lastGr = Gr::where('gr_no', 'like', $prefix . '-%')
-            ->orderByRaw('CAST(SUBSTRING_INDEX(gr_no, \'-\', -1) AS UNSIGNED) DESC')
-            ->first();
-
-        $branchSerial = BranchSerial::where('office', $office)->first();
-        $startFrom = $branchSerial ? $branchSerial->start_from : 1;
-
-        $nextNum = $lastGr
-            ? ((int) substr($lastGr->gr_no, strlen($prefix) + 1)) + 1
-            : $startFrom;
-
-        return $prefix . '-' . str_pad($nextNum, 5, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Get the GR prefix for an office.
-     */
-    private function getGrPrefix(string $office): string
-    {
-        // Priority 1: BranchSerial
-        $branchSerial = BranchSerial::where('office', $office)->first();
-        if ($branchSerial && $branchSerial->gr_prefix) {
-            return $branchSerial->gr_prefix;
-        }
-
-        // Priority 2: Branch.gr_prefix
         $branch = Branch::where('branch_name', $office)->first();
-        if ($branch && $branch->gr_prefix) {
-            return $branch->gr_prefix;
-        }
-
-        // Priority 3: hardcoded fallback
-        $map = [
-            'Rajkot' => 'AA', 'Kashmore Gate' => 'CG', 'Navagam' => 'NV',
-            'Dayabasti' => 'DB', 'Swarup Nagar' => 'SN',
-            'Shapar (1)' => 'S1', 'Shapar (2)' => 'S2',
-        ];
-        return $map[$office] ?? 'GR';
+        return SerialNumberService::previewNext($branch->id, 'gr');
     }
 
     /**
@@ -705,9 +719,11 @@ class GrController extends Controller
         return round(
             floatval($data['frieght_amount'] ?? 0) +
             floatval($data['sur_ch'] ?? 0) +
+            floatval($data['labour'] ?? 0) +
+            floatval($data['dd'] ?? 0) +
             floatval($data['c_r'] ?? 0) +
-            floatval($data['other'] ?? 0) +
-            floatval($data['bc_amount'] ?? 0),
+            floatval($data['bc_amount'] ?? 0) +
+            floatval($data['other'] ?? 0),
             2
         );
     }
@@ -718,29 +734,34 @@ class GrController extends Controller
     private function grRules(): array
     {
         return [
-            'copy_date'         => 'required|date|before_or_equal:today',
+            'copy_date'         => 'required|date',
             'from_dest'         => 'required|string|max:100',
             'to_dest'           => 'required|string|max:100|different:from_dest',
             'consignor'         => 'required|string|max:200',
-            'consignor_address' => 'required|string|max:500',
-            'consignor_gst_no'  => ['nullable', 'string', 'max:15', new GstNumberRule()],
+            'consignor_address' => 'nullable|string|max:500',
+            'consignor_gst_no'  => 'nullable|string|max:15',
             'consignee'         => 'required|string|max:200',
-            'consignee_address' => 'required|string|max:500',
-            'consignee_gst_no'  => ['nullable', 'string', 'max:15', new GstNumberRule()],
+            'consignee_address' => 'nullable|string|max:500',
+            'consignee_gst_no'  => 'nullable|string|max:15',
+            'consignor_id'      => 'nullable|integer',
+            'consignee_id'      => 'nullable|integer',
             'nugs'              => 'required|integer|min:1',
-            'meth'              => 'required|string|in:Bag,Box,Bundle,Drum,Roll,Carton,Loose,Other',
-            'weight'            => 'required|numeric|min:0.01',
+            'meth'              => 'required|string',
+            'weight'            => 'nullable|numeric|min:0',
             'description'       => 'required|string|max:500',
-            'pm'                => 'nullable|string|max:50',
-            'eway_bill_number'  => 'nullable|string|max:12',
-            'bill_amount'       => 'nullable|numeric|min:0',
+            'pm'                => 'required|string|max:50',
+            'eway_bill_number'  => 'nullable|string|max:20',
+            'bill_amount'       => 'required|numeric|min:0',
+            'rate_type'         => 'nullable|in:by_nugs,by_weight',
+            'rate'              => 'nullable|numeric|min:0',
             'frieght_amount'    => 'required|numeric|min:0',
             'sur_ch'            => 'nullable|numeric|min:0',
+            'labour'            => 'nullable|numeric|min:0',
+            'dd'                => 'nullable|numeric|min:0',
             'c_r'               => 'nullable|numeric|min:0',
-            'other'             => 'nullable|numeric|min:0',
             'bc_amount'         => 'nullable|numeric|min:0',
-            'paid'              => 'boolean',
-            'to_pay'            => 'boolean',
+            'other'             => 'nullable|numeric|min:0',
+            'to_pay'            => 'required|in:0,1',
         ];
     }
 
@@ -752,13 +773,11 @@ class GrController extends Controller
             'to_dest.required'           => 'To destination is required.',
             'to_dest.different'          => 'From and To destinations must be different.',
             'consignor.required'         => 'Consignor name is required.',
-            'consignor_address.required' => 'Consignor address is required.',
             'consignee.required'         => 'Consignee name is required.',
-            'consignee_address.required' => 'Consignee address is required.',
             'nugs.required'              => 'Number of packages is required.',
             'nugs.min'                   => 'At least 1 package is required.',
             'weight.min'                 => 'Weight must be greater than 0.',
-            'eway_bill_number.max'       => 'E-Way bill number cannot exceed 12 characters.',
+            'eway_bill_number.max'       => 'E-Way bill number cannot exceed 20 characters.',
         ];
     }
 }

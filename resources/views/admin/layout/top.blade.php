@@ -39,3 +39,19 @@
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700,800' rel='stylesheet' type='text/css'>  -->
     <link rel="stylesheet" href="{{asset('admin/css/lib/chosen/chosen.min.css')}}">
     <link rel="stylesheet" href="{{asset('admin/css/sxpress-custom.css')}}">
+
+    <style>
+        /* Force all text inputs to display UPPERCASE */
+        input[type="text"],
+        input[type="email"],
+        input[type="search"],
+        textarea,
+        select {
+            text-transform: uppercase !important;
+        }
+        input[type="text"]::placeholder,
+        input[type="email"]::placeholder,
+        textarea::placeholder {
+            text-transform: none !important;
+        }
+    </style>

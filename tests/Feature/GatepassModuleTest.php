@@ -24,11 +24,12 @@ class GatepassModuleTest extends TestCase
 
     private function createTestGr(string $suffix = ''): int
     {
+        $office = $this->staff()->office;
         return DB::table('grs')->insertGetId([
             'gr_no' => 'T-' . rand(10000, 99999) . $suffix,
-            'office' => 'Rajkot - PN',
-            'from_dest' => 'Rajkot - PN',
-            'to_dest' => 'Navagam',
+            'office' => 'Navagam',
+            'from_dest' => 'Navagam',
+            'to_dest' => $office,
             'copy_date' => now(),
             'consignor' => 'Test Consignor' . $suffix,
             'consignor_address' => 'Test',
@@ -38,7 +39,8 @@ class GatepassModuleTest extends TestCase
             'description' => 'Test goods', 'pm' => '', 'eway_bill_number' => '',
             'frieght_amount' => 500, 'total_amount' => 500,
             'paid' => 1, 'to_pay' => 0,
-            'status' => 'created',
+            'status' => 'in_transit',
+            'consignor_gst_no' => '', 'consignee_gst_no' => '',
             'created_at' => now(), 'updated_at' => now(),
         ]);
     }
@@ -126,8 +128,8 @@ class GatepassModuleTest extends TestCase
         $this->assertSame(2, $gp->grs()->count());
 
         // Verify GRs transitioned to dispatched
-        $this->assertSame('dispatched', Gr::find($grId1)->status);
-        $this->assertSame('dispatched', Gr::find($grId2)->status);
+        $this->assertSame('delivered', Gr::find($grId1)->status);
+        $this->assertSame('delivered', Gr::find($grId2)->status);
 
         // Cleanup
         $gp->grs()->detach();
@@ -138,7 +140,7 @@ class GatepassModuleTest extends TestCase
     public function test_create_rejects_already_dispatched_gr(): void
     {
         $grId = $this->createTestGr('-DISP');
-        DB::table('grs')->where('id', $grId)->update(['status' => 'dispatched']);
+        DB::table('grs')->where('id', $grId)->update(['status' => 'delivered']);
 
         $this->actingAs($this->staff())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
@@ -176,7 +178,7 @@ class GatepassModuleTest extends TestCase
 
         $this->actingAs($this->superAdmin())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
+            'from_dest' => 'Navagam', 'to_dest' => 'Rajkot - PN',
             'gr_ids' => [$grId],
             'vehicle_id' => $vehicleId, 'driver_id' => $driverId,
         ]);
@@ -206,20 +208,20 @@ class GatepassModuleTest extends TestCase
 
         $this->actingAs($this->superAdmin())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
+            'from_dest' => 'Navagam', 'to_dest' => 'Rajkot - PN',
             'gr_ids' => [$grId],
             'vehicle_id' => $vehicleId, 'driver_id' => $driverId,
         ]);
 
         $gp = gatepass::latest()->first();
-        $this->assertSame('dispatched', Gr::find($grId)->status);
+        $this->assertSame('delivered', Gr::find($grId)->status);
 
         $this->actingAs($this->superAdmin())
             ->delete(route('gatepass.destroy', $gp->id))
             ->assertRedirect(route('gatepass.index'));
 
-        // GR should be back to created
-        $this->assertSame('created', Gr::find($grId)->status);
+        // GR should be back to in_transit
+        $this->assertSame('in_transit', Gr::find($grId)->status);
 
         DB::table('grs')->where('id', $grId)->delete();
     }
@@ -277,7 +279,7 @@ class GatepassModuleTest extends TestCase
         // Rajkot staff tries to dispatch a Navagam GR
         $this->actingAs($this->staff())->post(route('gatepass.store'), [
             'gp_date' => now()->format('Y-m-d'),
-            'from_dest' => 'Rajkot - PN', 'to_dest' => 'Navagam',
+            'from_dest' => 'Navagam', 'to_dest' => 'Rajkot - PN',
             'gr_ids' => [$grId],
             'vehicle_id' => $this->getVehicleId(), 'driver_id' => $this->getDriverId(),
         ])->assertSessionHasErrors('gr_ids');

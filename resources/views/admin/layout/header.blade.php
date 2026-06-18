@@ -152,7 +152,7 @@
                                 <option value="" disabled {{ !session('impersonating_office') ? 'selected' : '' }}>All Offices</option>
                                 @foreach(\App\Models\Branch::active()->orderBy('branch_name')->get() as $branch)
                                 <option value="{{ $branch->branch_name }}" {{ session('impersonating_office') == $branch->branch_name ? 'selected' : '' }}>
-                                    {{ $branch->branch_name }} ({{ $branch->gr_prefix }})
+                                    {{ $branch->branch_name }} ({{ $branch->branch_code }})
                                 </option>
                                 @endforeach
                             </select>

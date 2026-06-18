@@ -1,401 +1,318 @@
 @extends('admin.layout.master')
 @section('content')
 
-<style>
-    .gr-form {
-        font-size: 12px;
-    }
-    .gr-form .form-group {
-        margin-bottom: 6px;
-    }
-    .gr-form label {
-        margin-bottom: 1px;
-        font-size: 11px;
-    }
-    .gr-form .form-control {
-        padding: 3px 6px;
-        font-size: 12px;
-        height: 28px;
-    }
-    .gr-form textarea.form-control {
-        height: 52px;
-        resize: none;
-    }
-    .gr-form table {
-        font-size: 11px;
-        margin-bottom: 6px;
-    }
-    .gr-form table th,
-    .gr-form table td {
-        padding: 3px 5px;
-        vertical-align: middle;
-    }
-    .gr-form table .form-control {
-        height: 24px;
-        padding: 2px 4px;
-        font-size: 11px;
-    }
-    .gr-form .btn {
-        padding: 5px 20px;
-        font-size: 12px;
-    }
-    .gr-form .card {
-        margin-bottom: 0;
-    }
-    .gr-form .card-body {
-        padding: 6px 12px;
-    }
-    .gr-form .card-header {
-        padding: 6px 15px;
-    }
-    .gr-form .card-title h3 {
-        font-size: 14px;
-        margin: 0;
-    }
-    .gr-form .card-title p {
-        font-size: 10px;
-        margin: 1px 0 0;
-    }
-    .gr-form hr {
-        margin: 6px 0;
-    }
-    .gr-form .page-title h1 {
-        font-size: 18px;
-    }
-    .gr-form .page-title {
-        line-height: 1.2;
-    }
-    .gr-form .content {
-        margin-top: 0.5rem;
-    }
-    .gr-form .breadcrumbs {
-        padding: 0.4rem 0;
-        margin-bottom: 0;
-    }
-    .gr-form .alert {
-        padding: 6px 12px;
-        margin-bottom: 6px;
-        font-size: 11px;
-    }
-    .gr-form .table-bordered th,
-    .gr-form .table-bordered td {
-        border: 1px solid #ccc;
-    }
-    .gr-form .submit-section {
-        margin-top: 6px;
-    }
-    .gr-form .t-c {
-        font-size: 9px;
-        line-height: 1.3;
-        color: #666;
-    }
-    body {
-        overflow-x: hidden;
-    }
-</style>
-
 <div class="breadcrumbs">
-    <div class="col-sm-4">
-        <div class="page-header float-left">
-            <div class="page-title">
-                <h1>GR Edit</h1>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-8">
-        <div class="page-header float-right">
-            <div class="page-title">
-                <ol class="breadcrumb text-right">
-                    <li><a href="{{url('/dash')}}">Dashboard</a></li>
-                    <li><a href="{{url('/gr')}}">GR List</a></li>
-                    <li class="active">GR Edit</li>
-                </ol>
-            </div>
-        </div>
-    </div>
+    <div class="col-sm-4"><div class="page-header float-left"><div class="page-title"><h1>Edit GR</h1></div></div></div>
+    <div class="col-sm-8"><div class="page-header float-right"><div class="page-title">
+        <ol class="breadcrumb text-right">
+            <li><a href="{{url('/dash')}}">Dashboard</a></li>
+            <li><a href="{{url('/gr')}}">GR List</a></li>
+            <li class="active">Edit GR</li>
+        </ol>
+    </div></div></div>
 </div>
 
-<div class="content mt-2 gr-form">
-    <div class="animated fadeIn">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="row">
-                            <div class="col-6">
-                                <strong class="card-title">Subject to Rajkot Jurisdiction</strong>
-                            </div>
-                            <div class="col-6">
-                                <strong style="float:right" class="card-title">GST No.: 24AFSPJ7382P1ZI</strong>
-                            </div>
-                        </div>
+<div class="content mt-3">
+<div class="animated fadeIn">
+<div class="row">
+<div class="col-md-12">
+<div class="card">
+    <div class="card-header">
+        <strong>Edit GR</strong> &mdash; {{ $gr->gr_no }}
+    </div>
+    <div class="card-body">
+
+        @if($errors->any())
+        <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+        @endif
+
+        <form method="POST" action="{{ url('/gr/'.$id.'/update') }}" id="grForm">
+            @csrf
+            @method('PATCH')
+
+            <!-- PAYMENT TYPE -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label class="font-weight-bold">Payment Type *</label>
+                    <div class="mt-1">
+                        <label class="mr-4"><input type="radio" name="to_pay" value="1" {{ old('to_pay', $gr->to_pay ? '1' : '0') == '1' ? 'checked' : '' }}> TO PAY</label>
+                        <label><input type="radio" name="to_pay" value="0" {{ old('to_pay', $gr->to_pay ? '1' : '0') == '0' ? 'checked' : '' }}> PAID</label>
                     </div>
-                    <div class="card-body">
-                        <div id="pay-invoice">
-                            <div class="card-body">
-                                <div class="card-title">
-                                    <h3 class="text-center">SAURASHTRA EXPRESS</h3>
-                                    <p style="text-align: center;">H. O. :- 2- Patel Nagar, Bhoja Bhagat Street, 50ft Ring Road, Rajkot. <br>
-                                    Contact No. : 097279 00008, 93750 88088</p>
-                                </div>
-                                <hr>
-                                @if(\Session::has('success'))
-                                <div class="alert alert-success">
-                                    <p>{{\Session::get('success')}}</p>
-                                </div>
-                                @endif
-
-                                @if ($errors->any())
-                                <div class="alert alert-danger">
-                                    <ul>
-                                        @foreach ($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                                @endif
-
-                                <form action="{{url('/gr/'.$id.'/update')}}" method="post" novalidate="novalidate">
-                                    {{csrf_field()}}
-                                    <input type="hidden" name="_method" value="PATCH"/>
-                                    <div class="row">
-                                        <div class="col-12 col-lg-4">
-                                            <div class="form-group">
-                                                <label class="control-label mb-1"><strong>From</strong></label>
-                                                <input type="text" class="form-control" value="{{ $gr->from_dest }}" readonly>
-                                                <input type="hidden" name="from_dest" value="{{ $gr->from_dest }}">
-                                            </div>
-                                        </div>
-                                        <div class="col-12 col-lg-4">
-                                            <div class="form-group">
-                                                <label class="control-label mb-1"><strong>To</strong></label>
-                                                <select name="to_dest" class="form-control">
-                                                    <option value="">Select Destination</option>
-                                                    @foreach($destinations as $dest)
-                                                        @if($dest !== $gr->from_dest)
-                                                            <option value="{{ $dest }}" {{ $gr->to_dest == $dest ? 'selected' : '' }}>{{ $dest }}</option>
-                                                        @endif
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-12 col-lg-4">
-                                            <label class="control-label mb-1"><strong>Date</strong></label>
-                                            <div class="input-group">
-                                                <input name="copy_date" value="{{$gr->copy_date}}" type="text" class="form-control" readonly>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group" style="margin-bottom:6px">
-                                        <label class="form-control-label"><strong>GR Number</strong></label>
-                                        <input type="text" name="gr_no" value="{{$gr->gr_no}}" class="form-control" readonly>
-                                    </div>
-
-                                    <div class="row" style="margin-bottom:6px">
-                                        <div class="col-md-3">
-                                            <div class="form-group">
-                                                <label class="form-control-label"><strong>Consignor</strong></label>
-                                                <input type="text" value="{{$gr->consignor}}" name="consignor" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label class="form-control-label"><strong>Address</strong></label>
-                                                <input type="text" value="{{$gr->consignor_address}}" name="consignor_address" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-group">
-                                                <label class="form-control-label"><strong>GST No.</strong></label>
-                                                <input type="text" value="{{$gr->consignor_gst_no}}" name="consignor_gst_no" class="form-control">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row" style="margin-bottom:6px">
-                                        <div class="col-md-3">
-                                            <div class="form-group">
-                                                <label class="form-control-label"><strong>Consignee</strong></label>
-                                                <input type="text" value="{{$gr->consignee}}" name="consignee" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label class="form-control-label"><strong>Address</strong></label>
-                                                <input type="text" value="{{$gr->consignee_address}}" name="consignee_address" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-group">
-                                                <label class="form-control-label"><strong>GST No.</strong></label>
-                                                <input type="text" value="{{$gr->consignee_gst_no}}" name="consignee_gst_no" class="form-control">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <table class="table table-bordered table-sm">
-                                        <tbody>
-                                            <tr>
-                                                <td style="width:8%"><input class="form-control" type="number" name="nugs" value="{{$gr->nugs}}" required></td>
-                                                <td style="width:10%">
-                                                    <select name="meth" class="form-control" required>
-                                                        <option value="">Meth</option>
-                                                        <option value="Bag" {{ $gr->meth == 'Bag' ? 'selected' : '' }}>Bag</option>
-                                                        <option value="Box" {{ $gr->meth == 'Box' ? 'selected' : '' }}>Box</option>
-                                                        <option value="Bundle" {{ $gr->meth == 'Bundle' ? 'selected' : '' }}>Bundle</option>
-                                                        <option value="Drum" {{ $gr->meth == 'Drum' ? 'selected' : '' }}>Drum</option>
-                                                        <option value="Roll" {{ $gr->meth == 'Roll' ? 'selected' : '' }}>Roll</option>
-                                                        <option value="Carton" {{ $gr->meth == 'Carton' ? 'selected' : '' }}>Carton</option>
-                                                        <option value="Loose" {{ $gr->meth == 'Loose' ? 'selected' : '' }}>Loose</option>
-                                                        <option value="Other" {{ $gr->meth == 'Other' ? 'selected' : '' }}>Other</option>
-                                                    </select>
-                                                </td>
-                                                <td style="width:30%"><textarea name="description" rows="2" class="form-control" style="height:36px;resize:none">{{$gr->description}}</textarea></td>
-                                                <td style="width:10%"><input class="form-control" type="text" name="pm" value="{{ $gr->pm }}"></td>
-                                                <td style="width:10%"><input class="form-control" type="text" name="weight" value="{{ $gr->weight }}"></td>
-                                                <td style="width:8%"><input class="form-control sum" type="number" name="frieght_amount" value="{{$gr->frieght_amount}}"></td>
-                                                <td style="width:6%"><input class="form-control sum" type="number" name="sur_ch" value="{{$gr->sur_ch}}"></td>
-                                                <td style="width:6%"><input class="form-control sum" type="number" name="c_r" value="{{$gr->c_r}}"></td>
-                                                <td style="width:6%"><input class="form-control sum" type="number" name="other" value="{{$gr->other}}"></td>
-                                                <td style="width:6%"><input class="form-control sum" type="number" name="bc_amount" value="{{$gr->bc_amount}}"></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="2">
-                                                    Bill: <input class="form-control" type="number" name="bill_amount" value="{{$gr->bill_amount}}" style="width:80px;display:inline">
-                                                </td>
-                                                <td colspan="2">
-                                                    E-Way: <input type="text" class="form-control" name="eway_bill_number" value="{{$gr->eway_bill_number}}" style="width:120px;display:inline">
-                                                </td>
-                                                <td colspan="2" class="text-center">
-                                                    To Pay: <input type="checkbox" value="1" name="to_pay" {{$gr->to_pay == 1 ? 'checked' : ''}}>
-                                                    &nbsp; Paid: <input type="checkbox" value="1" name="paid" {{$gr->paid == 1 ? 'checked' : ''}}>
-                                                </td>
-                                                <td colspan="2">
-                                                    Total: <input id="totalsum" class="form-control" type="number" name="total_amount" value="{{$gr->total_amount}}" readonly style="background:#eee;width:80px;display:inline">
-                                                </td>
-                                                <td>{{$gr->from_dest}}</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="10">
-                                                    <small class="t-c">T&C: (1) Not responsible after 6 months. (2) No delivery without Consignee copy. (3) No responsibility for damage/theft in transit. (4) Receipt without date cancelled.</small>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-
-                                    <div class="submit-section">
-                                        <button id="payment-button" type="submit" class="btn btn-success btn-lg btn-block">
-                                            <span id="payment-button-amount">Update GR</span>
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- POD Section -->
-                    <div class="card mt-2">
-                        <div class="card-header" style="padding:6px 15px">
-                            <strong class="card-title" style="font-size:13px">Delivery Status & POD</strong>
-                        </div>
-                        <div class="card-body" style="padding:8px 12px">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <table class="table table-sm mb-0" style="font-size:11px">
-                                        <tr>
-                                            <th>Status:</th>
-                                            <td>
-                                                @php
-                                                    $editStatus = $gr->status ?? 'created';
-                                                    $editStatusClass = match($editStatus) {
-                                                        'created'    => 'bg-secondary',
-                                                        'dispatched' => 'bg-primary',
-                                                        'in_transit' => 'bg-warning text-dark',
-                                                        'delivered'  => 'bg-info',
-                                                        'closed'     => 'bg-success',
-                                                        'cancelled'  => 'bg-danger',
-                                                        default      => 'bg-light text-dark',
-                                                    };
-                                                    $editStatusLabel = match($editStatus) {
-                                                        'created'    => 'Created',
-                                                        'dispatched' => 'Dispatched',
-                                                        'in_transit' => 'In Transit',
-                                                        'delivered'  => 'Delivered',
-                                                        'closed'     => 'Closed',
-                                                        'cancelled'  => 'Cancelled',
-                                                        default      => ucfirst($editStatus),
-                                                    };
-                                                @endphp
-                                                <span class="badge {{ $editStatusClass }}">{{ $editStatusLabel }}</span>
-                                            </td>
-                                        </tr>
-                                        @if($gr->delivered_at)
-                                        <tr>
-                                            <th>Delivered At:</th>
-                                            <td>{{ \Carbon\Carbon::parse($gr->delivered_at)->format('d M Y H:i') }}</td>
-                                        </tr>
-                                        @endif
-                                        @if($gr->pod_file)
-                                        <tr>
-                                            <th>POD:</th>
-                                            <td><a href="{{ url('/gr/'.$gr->id.'/pod') }}" target="_blank" class="btn btn-sm btn-info">View POD</a></td>
-                                        </tr>
-                                        @endif
-                                    </table>
-                                </div>
-                                <div class="col-md-6 text-right">
-                                    <select name="delivery_status" id="delivery_status" class="form-control" style="width:auto;display:inline" onchange="updateDeliveryStatus({{ $gr->id }}, this.value)">
-                                        <option value="created" {{ ($gr->status ?? '') == 'created' ? 'selected' : '' }}>Created</option>
-                                        <option value="dispatched" {{ ($gr->status ?? '') == 'dispatched' ? 'selected' : '' }}>Dispatched</option>
-                                        <option value="in_transit" {{ ($gr->status ?? '') == 'in_transit' ? 'selected' : '' }}>In Transit</option>
-                                        <option value="delivered" {{ ($gr->status ?? '') == 'delivered' ? 'selected' : '' }}>Delivered</option>
-                                    </select>
-                                    <a href="{{ url('/gr/'.$gr->id.'/upload-pod') }}" class="btn btn-primary btn-sm">
-                                        <i class="fa fa-upload"></i> Upload POD
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <input type="hidden" name="paid" id="paid_hidden" value="{{ $gr->paid ? '1' : '0' }}">
                 </div>
             </div>
-        </div>
+
+            <div class="row">
+                <!-- LEFT COLUMN -->
+                <div class="col-md-7">
+
+                    <!-- Date + Destinations -->
+                    <div class="row mb-2">
+                        <div class="col-md-4">
+                            <label>Date</label>
+                            <input type="text" class="form-control" value="{{ $gr->copy_date ? $gr->copy_date->format('Y-m-d') : '' }}" readonly>
+                            <input type="hidden" name="copy_date" value="{{ $gr->copy_date ? $gr->copy_date->format('Y-m-d') : '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label>From</label>
+                            <input type="text" class="form-control" value="{{ $gr->from_dest }}" readonly>
+                            <input type="hidden" name="from_dest" value="{{ $gr->from_dest }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label>To *</label>
+                            <select name="to_dest" class="form-control" required>
+                                <option value="">-- Select --</option>
+                                @foreach($destinations as $dest)
+                                @if($dest !== $gr->from_dest)
+                                <option value="{{ $dest }}" {{ old('to_dest', $gr->to_dest)==$dest?'selected':'' }}>{{ $dest }}</option>
+                                @endif
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- CONSIGNOR -->
+                    <div class="row mb-2">
+                        <div class="col-md-5">
+                            <label>Consignor GST No</label>
+                            <input type="text" name="consignor_gst_no" id="consignor_gst" class="form-control" value="{{ old('consignor_gst_no', $gr->consignor_gst_no) }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label>Consignor Name *</label>
+                            <input type="text" name="consignor" id="consignor_name" class="form-control" value="{{ old('consignor', $gr->consignor) }}">
+                            <input type="hidden" name="consignor_id" id="consignor_id" value="{{ old('consignor_id', $gr->consignor_id) }}">
+                            <input type="hidden" id="consignor_rate_nug" value="0">
+                            <input type="hidden" id="consignor_rate_kg" value="0">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <a href="{{ url('/consignor/create') }}" target="_blank" class="btn btn-outline-primary btn-sm">+ New</a>
+                        </div>
+                    </div>
+
+                    <!-- CONSIGNEE -->
+                    <div class="row mb-2">
+                        <div class="col-md-5">
+                            <label>Consignee GST No</label>
+                            <input type="text" name="consignee_gst_no" id="consignee_gst" class="form-control" value="{{ old('consignee_gst_no', $gr->consignee_gst_no) }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label>Consignee Name *</label>
+                            <input type="text" name="consignee" id="consignee_name" class="form-control" value="{{ old('consignee', $gr->consignee) }}">
+                            <input type="hidden" name="consignee_id" id="consignee_id" value="{{ old('consignee_id', $gr->consignee_id) }}">
+                            <input type="hidden" id="consignee_rate_nug" value="0">
+                            <input type="hidden" id="consignee_rate_kg" value="0">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <a href="{{ url('/consignee/create') }}" target="_blank" class="btn btn-outline-primary btn-sm">+ New</a>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- GOODS -->
+                    <div class="row mb-2">
+                        <div class="col-md-3">
+                            <label>Nugs *</label>
+                            <input type="number" name="nugs" id="nugs" class="form-control" value="{{ old('nugs', $gr->nugs) }}" required min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Method *</label>
+                            <select name="meth" id="meth_select" class="form-control" required onchange="toggleOtherMeth()">
+                                <option value="">--</option>
+                                @foreach(['Box','Bag','Bundle','Loose','Drum','Carton','Pkt','Roll','Other'] as $m)
+                                <option value="{{ $m }}" {{ old('meth', $gr->meth)==$m?'selected':'' }}>{{ $m }}</option>
+                                @endforeach
+                            </select>
+                            @php
+                                $isOtherMeth = !in_array($gr->meth, ['Box','Bag','Bundle','Loose','Drum','Carton','Pkt','Roll','Other','']);
+                            @endphp
+                            <input type="text" name="meth_other" id="meth_other" class="form-control mt-1" placeholder="Specify other method" value="{{ old('meth_other', $isOtherMeth ? $gr->meth : '') }}" style="{{ old('meth', $gr->meth)=='Other' || $isOtherMeth ? '' : 'display:none;' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Weight (kg)</label>
+                            <input type="number" name="weight" id="weight" class="form-control" value="{{ old('weight', $gr->weight) }}" step="0.001" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label>PM *</label>
+                            <input type="text" name="pm" class="form-control" value="{{ old('pm', $gr->pm) }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-12">
+                            <label>Description *</label>
+                            <input type="text" name="description" class="form-control" value="{{ old('description', $gr->description) }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-4">
+                            <label>Rate Type</label>
+                            <div class="mt-1">
+                                <label class="mr-3"><input type="radio" name="rate_type" value="by_nugs" id="rate_by_nugs" {{ old('rate_type', $gr->rate_type ?? 'by_nugs')=='by_nugs'?'checked':'' }}> By Nugs</label>
+                                <label><input type="radio" name="rate_type" value="by_weight" id="rate_by_weight" {{ old('rate_type', $gr->rate_type)=='by_weight'?'checked':'' }}> By Weight</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label>Rate (&#8377;)</label>
+                            <input type="number" name="rate" id="rate" class="form-control" value="{{ old('rate', $gr->rate ?? 0) }}" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label>Freight * (auto, editable)</label>
+                            <input type="number" name="frieght_amount" id="freight" class="form-control" value="{{ old('frieght_amount', $gr->frieght_amount) }}" step="0.01" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-4">
+                            <label>E-Way Bill No</label>
+                            <input type="text" name="eway_bill_number" class="form-control" value="{{ old('eway_bill_number', $gr->eway_bill_number) }}">
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT COLUMN: Charges -->
+                <div class="col-md-5">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="font-weight-bold mb-3">Charges</h6>
+
+                            <div class="form-group row mb-2">
+                                <label class="col-sm-5 col-form-label">Surcharge</label>
+                                <div class="col-sm-7"><input type="number" name="sur_ch" class="form-control charge-input" value="{{ old('sur_ch', $gr->sur_ch) }}" step="0.01" min="0"></div>
+                            </div>
+                            <div class="form-group row mb-2">
+                                <label class="col-sm-5 col-form-label">Labour</label>
+                                <div class="col-sm-7"><input type="number" name="labour" class="form-control charge-input" value="{{ old('labour', $gr->labour ?? 0) }}" step="0.01" min="0"></div>
+                            </div>
+                            <div class="form-group row mb-2">
+                                <label class="col-sm-5 col-form-label">DD (Door Delivery)</label>
+                                <div class="col-sm-7"><input type="number" name="dd" class="form-control charge-input" value="{{ old('dd', $gr->dd ?? 0) }}" step="0.01" min="0"></div>
+                            </div>
+                            <div class="form-group row mb-2">
+                                <label class="col-sm-5 col-form-label">Local Charge</label>
+                                <div class="col-sm-7"><input type="number" name="c_r" class="form-control charge-input" value="{{ old('c_r', $gr->c_r) }}" step="0.01" min="0"></div>
+                            </div>
+                            <div class="form-group row mb-2">
+                                <label class="col-sm-5 col-form-label">BC</label>
+                                <div class="col-sm-7"><input type="number" name="bc_amount" class="form-control charge-input" value="{{ old('bc_amount', $gr->bc_amount) }}" step="0.01" min="0"></div>
+                            </div>
+                            <div class="form-group row mb-2">
+                                <label class="col-sm-5 col-form-label">Other</label>
+                                <div class="col-sm-7"><input type="number" name="other" class="form-control charge-input" value="{{ old('other', $gr->other) }}" step="0.01" min="0"></div>
+                            </div>
+
+                            <hr>
+
+                            <div class="form-group row mb-2">
+                                <label class="col-sm-5 col-form-label font-weight-bold">Bill Amount *</label>
+                                <div class="col-sm-7"><input type="number" name="bill_amount" class="form-control" value="{{ old('bill_amount', $gr->bill_amount) }}" step="0.01" min="0" required></div>
+                            </div>
+
+                            <hr>
+
+                            <div class="form-group row mb-0">
+                                <label class="col-sm-5 col-form-label font-weight-bold" style="font-size:16px">TOTAL &#8377;</label>
+                                <div class="col-sm-7">
+                                    <input type="text" id="total_display" class="form-control font-weight-bold" style="font-size:16px; background:#e8f5e9" readonly value="{{ number_format($gr->total_amount, 2) }}">
+                                    <input type="hidden" name="total_amount" id="total_amount" value="{{ $gr->total_amount }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg mt-3">
+                        <i class="fa fa-save"></i> UPDATE GR
+                    </button>
+                </div>
+            </div>
+
+        </form>
     </div>
+</div>
+</div>
+</div>
+</div>
 </div>
 
 <script>
-function updateDeliveryStatus(id, status) {
-    $.ajax({
-        url: '/gr/' + id + '/update-delivery-status',
-        type: 'POST',
-        data: {
-            _token: '{{ csrf_token() }}',
-            status: status
-        },
-        success: function(response) {
-            alert('Delivery status updated');
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Failed to update status'));
-        }
-    });
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle "Other" method text input
+    toggleOtherMeth();
 
-// Auto-calculate total
-(function() {
-    function calculateTotal() {
-        let total = 0;
-        document.querySelectorAll('.sum').forEach(function(input) {
-            total += parseFloat(input.value) || 0;
+    // Payment type toggle
+    document.querySelectorAll('input[name="to_pay"]').forEach(function(el) {
+        el.addEventListener('change', function() {
+            document.getElementById('paid_hidden').value = this.value == '0' ? '1' : '0';
         });
-        document.getElementById('totalsum').value = total.toFixed(2);
-    }
-    document.querySelectorAll('.sum').forEach(function(input) {
-        input.addEventListener('input', calculateTotal);
     });
-})();
-</script>
 
+    // GST auto-fetch
+    document.getElementById('consignor_gst').addEventListener('blur', function() {
+        fetchCustomerByGst(this.value, 'consignor');
+    });
+    document.getElementById('consignee_gst').addEventListener('blur', function() {
+        fetchCustomerByGst(this.value, 'consignee');
+    });
+
+    function fetchCustomerByGst(gst, type) {
+        if (!gst || gst.length < 5) return;
+        fetch('/customer/fetch-by-gst?gst_no=' + encodeURIComponent(gst))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.found) {
+                    document.getElementById(type + '_name').value = data.name;
+                    document.getElementById(type + '_id').value = data.id;
+                    document.getElementById(type + '_rate_nug').value = data.rate_per_nug || 0;
+                    document.getElementById(type + '_rate_kg').value = data.rate_per_kg || 0;
+                }
+            });
+    }
+
+    // Freight + Total calculation
+    function calculateFreight() {
+        var rateTypeEl = document.querySelector('input[name="rate_type"]:checked');
+        if (!rateTypeEl) return;
+        var rate = parseFloat(document.getElementById('rate').value) || 0;
+        var nugs = parseInt(document.getElementById('nugs').value) || 0;
+        var weight = parseFloat(document.getElementById('weight').value) || 0;
+        var freight = (rateTypeEl.value === 'by_nugs') ? nugs * rate : weight * rate;
+        document.getElementById('freight').value = freight.toFixed(2);
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        var freight = parseFloat(document.getElementById('freight').value) || 0;
+        var total = freight;
+        document.querySelectorAll('.charge-input').forEach(function(el) {
+            total += parseFloat(el.value) || 0;
+        });
+        document.getElementById('total_display').value = total.toFixed(2);
+        document.getElementById('total_amount').value = total.toFixed(2);
+    }
+
+    document.getElementById('nugs').addEventListener('input', calculateFreight);
+    document.getElementById('weight').addEventListener('input', calculateFreight);
+    document.getElementById('rate').addEventListener('input', calculateFreight);
+    document.querySelectorAll('input[name="rate_type"]').forEach(function(el) { el.addEventListener('change', calculateFreight); });
+    document.querySelectorAll('.charge-input').forEach(function(el) { el.addEventListener('input', calculateTotal); });
+    document.getElementById('freight').addEventListener('input', calculateTotal);
+
+    calculateTotal();
+});
+
+function toggleOtherMeth() {
+    var sel = document.getElementById('meth_select');
+    var other = document.getElementById('meth_other');
+    if (sel.value === 'Other') {
+        other.style.display = 'block';
+        other.required = true;
+    } else {
+        other.style.display = 'none';
+        other.required = false;
+        other.value = '';
+    }
+}
+</script>
 @endsection

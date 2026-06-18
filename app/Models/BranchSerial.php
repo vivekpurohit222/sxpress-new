@@ -8,43 +8,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * BranchSerial Model
  *
- * Stores GR serial number configuration per branch.
- * SuperAdmin assigns the starting GR number for each branch via /dash/serial-assign.
- * Once a branch has GR records, the serial is locked (cannot be changed).
- *
- * Per SXPRESS_LOGIC_SKILL section 13.
+ * Stores serial number range configuration per branch per module per financial year.
+ * Each branch gets a range (e.g. 1-999999) for each module (GR, Challan, FM, GP).
+ * The current_value tracks how many numbers have been used.
  */
 class BranchSerial extends Model
 {
     protected $table = 'branch_serials';
 
     protected $fillable = [
-        'office',
-        'gr_prefix',
-        'start_from',
-        'assigned_by',
-        'assigned_at',
-        'notes',
+        'branch_id',
+        'module',
+        'fy_year',
+        'range_start',
+        'range_end',
+        'current_value',
     ];
 
     protected $casts = [
-        'start_from'  => 'integer',
-        'assigned_at' => 'datetime',
+        'branch_id'     => 'integer',
+        'range_start'   => 'integer',
+        'range_end'     => 'integer',
+        'current_value' => 'integer',
     ];
 
     /**
-     * Get the user who assigned this serial.
+     * The branch this serial range belongs to.
      */
-    public function assignedBy(): BelongsTo
+    public function branch(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_by');
-    }
-
-    /**
-     * Check if this serial is locked (branch has GRs).
-     */
-    public function isLocked(): bool
-    {
-        return Gr::where('office', $this->office)->exists();
+        return $this->belongsTo(Branch::class);
     }
 }

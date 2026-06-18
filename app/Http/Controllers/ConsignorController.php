@@ -57,6 +57,8 @@ class ConsignorController extends Controller
             'email' => 'nullable|email|max:100',
             'contact_person' => 'nullable|max:100',
             'mobile' => 'nullable|max:20',
+            'rate_per_nug' => 'nullable|numeric|min:0',
+            'rate_per_kg' => 'nullable|numeric|min:0',
         ], [
             'consignor_name.required' => 'Consignor Name is required',
             'consignor_code.required' => 'Consignor Code is required',
@@ -66,6 +68,8 @@ class ConsignorController extends Controller
 
         $data = $request->all();
         $data['status'] = $request->has('status') ? 1 : 0;
+        $data['rate_per_nug'] = $request->input('rate_per_nug', 0);
+        $data['rate_per_kg'] = $request->input('rate_per_kg', 0);
 
         Consignor::create($data);
 
@@ -120,6 +124,8 @@ class ConsignorController extends Controller
             'email' => 'nullable|email|max:100',
             'contact_person' => 'nullable|max:100',
             'mobile' => 'nullable|max:20',
+            'rate_per_nug' => 'nullable|numeric|min:0',
+            'rate_per_kg' => 'nullable|numeric|min:0',
         ], [
             'consignor_name.required' => 'Consignor Name is required',
             'consignor_code.required' => 'Consignor Code is required',
@@ -128,6 +134,8 @@ class ConsignorController extends Controller
 
         $data = $request->all();
         $data['status'] = $request->has('status') ? 1 : 0;
+        $data['rate_per_nug'] = $request->input('rate_per_nug', 0);
+        $data['rate_per_kg'] = $request->input('rate_per_kg', 0);
 
         $consignor->update($data);
 

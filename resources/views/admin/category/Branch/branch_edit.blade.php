@@ -22,7 +22,7 @@
                 @method('PUT')
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="branch_name">Branch Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="branch_name" name="branch_name" value="{{ old('branch_name', $branch->branch_name) }}" required>
@@ -31,21 +31,10 @@
                                 @endif
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="branch_code">Branch Code <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="branch_code" name="branch_code" value="{{ old('branch_code', $branch->branch_code) }}" required style="text-transform:uppercase">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="gr_prefix">GR Prefix <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="gr_prefix" name="gr_prefix" value="{{ old('gr_prefix', $branch->gr_prefix) }}" maxlength="2" pattern="[A-Z]{2}" style="text-transform:uppercase" required {{ $hasGrs ? 'readonly' : '' }}>
-                                @if($hasGrs)
-                                    <small class="text-danger"><i class="fa fa-lock"></i> Locked — GRs exist with this prefix.</small>
-                                @else
-                                    <small class="text-muted">2 uppercase letters (e.g. AA, CG)</small>
-                                @endif
                             </div>
                         </div>
                     </div>
@@ -100,6 +89,97 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Branch Manager --}}
+                <div class="card-body border-top">
+                    <h5><strong>Branch Manager</strong></h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Manager Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="manager_name" value="{{ old('manager_name', $manager->name ?? '') }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Manager Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" name="manager_email" value="{{ old('manager_email', $manager->email ?? '') }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>New Password</label>
+                                <input type="password" class="form-control" name="manager_password" minlength="6" placeholder="Leave blank to keep current">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Module Permissions --}}
+                <div class="card-body border-top">
+                    <h5><strong>Module Permissions</strong></h5>
+                    <div class="row">
+                        @php $allModules = ['gr','challan','freight_memo','import_challan','gate_pass','dds']; @endphp
+                        @foreach($allModules as $mod)
+                        <div class="col-md-4 mb-2">
+                            <div class="form-check">
+                                <input type="checkbox" name="permissions[]" value="{{ $mod }}" class="form-check-input"
+                                    {{ in_array($mod, old('permissions', $branchPerms ?? [])) ? 'checked' : '' }}>
+                                <label class="form-check-label">{{ ucwords(str_replace('_', ' ', $mod)) }}</label>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Serial Number Ranges --}}
+                <div class="card-body border-top">
+                    <h5><strong>Serial Number Ranges</strong></h5>
+                    <p class="text-muted" style="font-size:12px">Serial ranges for financial year {{ \App\Services\SerialNumberService::currentFyPrefix() }}</p>
+
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Module</th>
+                                <th>Range Start</th>
+                                <th>Range End</th>
+                                <th>Current</th>
+                                <th>Remaining</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>GR</td>
+                                <td><input type="text" class="form-control form-control-sm" name="gr_range_start" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('gr_range_start', isset($serials['gr']) ? $serials['gr']->range_start : 1) }}" min="1" max="999999" required></td>
+                                <td><input type="text" class="form-control form-control-sm" name="gr_range_end" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('gr_range_end', isset($serials['gr']) ? $serials['gr']->range_end : 999999) }}" min="1" max="999999" required></td>
+                                <td>{{ isset($serials['gr']) ? $serials['gr']->current_value : 0 }}</td>
+                                <td>{{ isset($serials['gr']) ? max(0, $serials['gr']->range_end - ($serials['gr']->current_value ?: $serials['gr']->range_start - 1)) : '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td>Challan</td>
+                                <td><input type="text" class="form-control form-control-sm" name="challan_range_start" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('challan_range_start', isset($serials['challan']) ? $serials['challan']->range_start : 1) }}" min="1" max="999999" required></td>
+                                <td><input type="text" class="form-control form-control-sm" name="challan_range_end" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('challan_range_end', isset($serials['challan']) ? $serials['challan']->range_end : 999999) }}" min="1" max="999999" required></td>
+                                <td>{{ isset($serials['challan']) ? $serials['challan']->current_value : 0 }}</td>
+                                <td>{{ isset($serials['challan']) ? max(0, $serials['challan']->range_end - ($serials['challan']->current_value ?: $serials['challan']->range_start - 1)) : '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td>Freight Memo</td>
+                                <td><input type="text" class="form-control form-control-sm" name="freight_memo_range_start" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('freight_memo_range_start', isset($serials['freight_memo']) ? $serials['freight_memo']->range_start : 1) }}" min="1" max="999999" required></td>
+                                <td><input type="text" class="form-control form-control-sm" name="freight_memo_range_end" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('freight_memo_range_end', isset($serials['freight_memo']) ? $serials['freight_memo']->range_end : 999999) }}" min="1" max="999999" required></td>
+                                <td>{{ isset($serials['freight_memo']) ? $serials['freight_memo']->current_value : 0 }}</td>
+                                <td>{{ isset($serials['freight_memo']) ? max(0, $serials['freight_memo']->range_end - ($serials['freight_memo']->current_value ?: $serials['freight_memo']->range_start - 1)) : '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td>Gate Pass</td>
+                                <td><input type="text" class="form-control form-control-sm" name="gate_pass_range_start" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('gate_pass_range_start', isset($serials['gate_pass']) ? $serials['gate_pass']->range_start : 1) }}" min="1" max="999999" required></td>
+                                <td><input type="text" class="form-control form-control-sm" name="gate_pass_range_end" pattern="[0-9]{1,6}" inputmode="numeric" value="{{ old('gate_pass_range_end', isset($serials['gate_pass']) ? $serials['gate_pass']->range_end : 999999) }}" min="1" max="999999" required></td>
+                                <td>{{ isset($serials['gate_pass']) ? $serials['gate_pass']->current_value : 0 }}</td>
+                                <td>{{ isset($serials['gate_pass']) ? max(0, $serials['gate_pass']->range_end - ($serials['gate_pass']->current_value ?: $serials['gate_pass']->range_start - 1)) : '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary">Update Branch</button>
                     <a href="{{ route('branch.index') }}" class="btn btn-default">Cancel</a>

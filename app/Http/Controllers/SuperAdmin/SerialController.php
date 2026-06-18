@@ -5,7 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\BranchSerial;
-use App\Models\Gr;
+use App\Services\SerialNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,60 +17,96 @@ class SerialController extends Controller
     }
 
     /**
-     * Display serial assignment page.
-     * Per SXPRESS_LOGIC_SKILL section 13.
+     * Display serial assignment page — all branches, all 4 modules, current FY.
      */
     public function index()
     {
-        $branches = Branch::with('serial')
-            ->withCount('grs')
-            ->get()
-            ->map(function ($branch) {
-                $branch->is_locked = $branch->grs_count > 0;
-                return $branch;
-            });
+        $fyYear = SerialNumberService::currentFyPrefix();
 
-        return view('admin.superadmin.serial_assign', compact('branches'));
+        $branches = Branch::active()->orderBy('branch_name')->get();
+
+        $serials = BranchSerial::where('fy_year', $fyYear)->get()->groupBy('branch_id');
+
+        $modules = ['gr', 'challan', 'freight_memo', 'gate_pass'];
+        $moduleLabels = [
+            'gr' => 'GR',
+            'challan' => 'Challan',
+            'freight_memo' => 'Freight Memo',
+            'gate_pass' => 'Gate Pass',
+        ];
+
+        return view('admin.superadmin.serial_assign', compact('branches', 'serials', 'modules', 'moduleLabels', 'fyYear'));
     }
 
     /**
-     * Assign GR serial start number to a branch.
-     * POST /dash/serial-assign
+     * Update serial range for a specific branch+module.
+     * POST /serial-assign
      */
     public function assign(Request $request)
     {
         $validated = $request->validate([
-            'office'     => 'required|string|exists:branches,branch_name',
-            'start_from' => 'required|integer|min:1|max:99999',
-            'notes'      => 'nullable|string|max:500',
+            'branch_id'   => 'required|exists:branches,id',
+            'module'      => 'required|in:gr,challan,freight_memo,gate_pass',
+            'range_start' => 'required|numeric|min:1|max:999999',
+            'range_end'   => 'required|numeric|min:1|max:999999|gt:range_start',
         ], [
-            'office.required' => 'Please select an office.',
-            'start_from.required' => 'Start number is required.',
-            'start_from.min' => 'Start number must be at least 1.',
-            'start_from.max' => 'Start number cannot exceed 99999.',
+            'range_start.required' => 'Range start is required.',
+            'range_end.required'   => 'Range end is required.',
+            'range_end.gt'         => 'Range end must be greater than range start.',
         ]);
 
-        // Hard lock — cannot change once GRs exist
-        if (Gr::where('office', $validated['office'])->exists()) {
+        $fyYear = SerialNumberService::currentFyPrefix();
+
+        // Collision detection
+        $conflict = SerialNumberService::detectCollision(
+            $validated['module'],
+            $fyYear,
+            $validated['range_start'],
+            $validated['range_end'],
+            $validated['branch_id']
+        );
+
+        if ($conflict) {
             return back()->withInput()->withErrors([
-                'start_from' => 'Serial is locked — this office already has GR records.'
+                'range_start' => "Range overlaps with branch '{$conflict}'."
             ]);
         }
 
-        $branch = Branch::where('branch_name', $validated['office'])->first();
+        // Check if current_value exceeds new range
+        $existing = BranchSerial::where('branch_id', $validated['branch_id'])
+            ->where('module', $validated['module'])
+            ->where('fy_year', $fyYear)
+            ->first();
+
+        if ($existing && $existing->current_value > 0) {
+            if ($validated['range_start'] > $existing->current_value) {
+                return back()->withInput()->withErrors([
+                    'range_start' => "Cannot set range start above current value ({$existing->current_value}). Numbers already issued."
+                ]);
+            }
+            if ($validated['range_end'] < $existing->current_value) {
+                return back()->withInput()->withErrors([
+                    'range_end' => "Cannot set range end below current value ({$existing->current_value}). Numbers already issued."
+                ]);
+            }
+        }
 
         BranchSerial::updateOrCreate(
-            ['office' => $validated['office']],
             [
-                'gr_prefix'   => $branch->gr_prefix,
-                'start_from'  => $validated['start_from'],
-                'assigned_by' => Auth::id(),
-                'assigned_at' => now(),
-                'notes'       => $validated['notes'],
+                'branch_id' => $validated['branch_id'],
+                'module'    => $validated['module'],
+                'fy_year'   => $fyYear,
+            ],
+            [
+                'range_start' => $validated['range_start'],
+                'range_end'   => $validated['range_end'],
             ]
         );
 
+        $branch = Branch::find($validated['branch_id']);
+        $moduleLabel = ['gr' => 'GR', 'challan' => 'Challan', 'freight_memo' => 'Freight Memo', 'gate_pass' => 'Gate Pass'][$validated['module']];
+
         return redirect()->route('serial.index')
-            ->with('success', "Serial for {$validated['office']} set. First GR will be: {$branch->gr_prefix}-" . str_pad($validated['start_from'], 5, '0', STR_PAD_LEFT));
+            ->with('success', "{$moduleLabel} serial range for {$branch->branch_name} updated: {$validated['range_start']} - {$validated['range_end']}");
     }
 }

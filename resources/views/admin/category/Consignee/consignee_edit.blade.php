@@ -107,6 +107,20 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="rate_per_nug">Rate Per Nug (&#8377;)</label>
+                                <input type="number" class="form-control" id="rate_per_nug" name="rate_per_nug" value="{{ old('rate_per_nug', $consignee->rate_per_nug ?? 0) }}" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="rate_per_kg">Rate Per Kg (&#8377;)</label>
+                                <input type="number" class="form-control" id="rate_per_kg" name="rate_per_kg" value="{{ old('rate_per_kg', $consignee->rate_per_kg ?? 0) }}" step="0.01" min="0">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary">Update</button>

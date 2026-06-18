@@ -103,8 +103,6 @@
                         <li><i class="fa fa-sort-numeric-asc"></i><a href="{{ url('/serial-assign') }}">GR Serial</a></li>
                         <li><i class="fa fa-truck"></i><a href="{{ url('/vehicle') }}">Vehicles</a></li>
                         <li><i class="fa fa-id-card"></i><a href="{{ url('/truckdriver') }}">Drivers</a></li>
-                        <li><i class="fa fa-road"></i><a href="{{ url('/route') }}">Routes</a></li>
-                        <li><i class="fa fa-map-marker"></i><a href="{{ url('/station') }}">Stations</a></li>
                         <li><i class="fa fa-users"></i><a href="{{ url('/customer') }}">Customers</a></li>
                         <li><i class="fa fa-upload"></i><a href="{{ url('/consignor') }}">Consignors</a></li>
                         <li><i class="fa fa-download"></i><a href="{{ url('/consignee') }}">Consignees</a></li>

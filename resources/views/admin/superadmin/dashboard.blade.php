@@ -63,7 +63,7 @@
                         @forelse($branchSummary as $branch)
                         <tr>
                             <td>{{ $branch->branch_name }}</td>
-                            <td><span class="badge badge-info">{{ $branch->gr_prefix ?? '-' }}</span></td>
+                            <td><span class="badge badge-info">{{ $branch->branch_code ?? '-' }}</span></td>
                             <td>{{ $branch->grs_today_count }}</td>
                             <td>{{ $branch->grs_count }}</td>
                             <td>
